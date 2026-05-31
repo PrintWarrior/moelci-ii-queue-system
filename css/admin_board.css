@@ -1,0 +1,42 @@
+body { background: #fff; font-family: Arial, sans-serif; 
+}
+    .header { font-size: 20px; font-weight: bold; margin-bottom: 15px; 
+    }
+    .navbar .btn { background-color: #1b263b; color: white; margin-right: 10px; font-size: 14px;
+    }
+    .navbar .btn.active { background-color: #1b263b; color: #fff;
+    } 
+    .card { border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .card h6 { font-weight: bold; margin-bottom: 10px;
+    }
+    .card p { margin: 3px 0; font-size: 14px;
+    }
+    .status-active { color: green; font-weight: bold;
+    }
+    .status-idle { color: gray; font-weight: bold;
+    }
+    .section-title { font-weight: bold; margin-bottom: 15px;
+    }
+    .reminders { font-size: 14px; margin-top: 15px;
+    }
+    .hotline { color: #d90429; font-weight: bold;
+    }
+
+    /* Fixed header with scrollable body */
+.table-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table-scroll thead {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+}
+
+.transactions-container {
+    max-height: 60vh; /* 60% of viewport height */
+    overflow-y: auto;
+}

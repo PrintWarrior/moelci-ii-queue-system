@@ -1,0 +1,131 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 100vh;
+  text-decoration: none;
+  padding: 40px 20px;
+}
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  margin-top: 20px;
+  gap: 20px; /* spacing between logo, text, button, datetime */
+}
+
+.company-logo img {
+  width: 180px;
+  height: auto;
+  display: block;
+}
+
+.welcome-text {
+  text-align: center;
+  margin: 40px 0;
+  max-width: 500px;
+  text-decoration: none;
+}
+
+.welcome-inline {
+  display: flex;
+  justify-content: center; /* center horizontally */
+  align-items: center; /* align vertically */
+  gap: 40px; /* space between welcome text and datetime */
+  flex-wrap: wrap; /* responsive: stack on smaller screens */
+  margin: 30px 0;
+  text-decoration: none;
+}
+
+.welcome-text h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.welcome-text p {
+  color: #6b7280;
+  margin-top: 20px;
+}
+
+.transaction-button {
+  background-color: #4b5563;
+  color: white;
+  border: none;
+  padding: 18px 40px;
+  border-radius: 25px;
+  font-size: 16px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  margin: 20px 0;
+}
+
+/*.transaction-button:hover {
+  background-color: #374151;
+  transform: translateY(-2px);
+  
+}*/
+
+.transaction-button:active {
+  transform: translateY(0);
+}
+
+.datetime {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 500;
+    margin-top: 10px;
+}
+
+.date {
+  font-size: 22px;
+  margin-bottom: 5px;
+  /* color: #1f2937; */
+}
+
+.time {
+  font-size: 36px;
+  font-weight: 700;
+  /* color: #2563eb; */
+  letter-spacing: 1px;
+}
+
+a{
+  text-decoration: none;
+}
+
+@media (max-width: 600px) {
+  .welcome-text h1 {
+    font-size: 28px;
+  }
+
+  .transaction-button {
+    padding: 16px 30px;
+    font-size: 14px;
+  }
+
+  .datetime {
+    width: 280px;
+    font-size: 18px;
+  }
+
+  .time {
+    font-size: 32px;
+  }
+}

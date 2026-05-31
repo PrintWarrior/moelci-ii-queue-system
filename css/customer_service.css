@@ -1,0 +1,107 @@
+/* RESET */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* PAGE BACKGROUND */
+body {
+    min-height: 100vh;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-circle {
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: #ffffff;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-image {
+    width: 85%;
+    height: auto;
+}
+
+/* BUTTON GRID */
+.buttons-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* FORM RESET */
+.buttons-container form {
+    width: 100%;
+}
+
+/* SERVICE BUTTON */
+.menu-button {
+    width: 100%;
+    padding: 22px 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: #1f4fd8;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 6px 16px rgba(31, 79, 216, 0.35);
+}
+
+/* BUTTON HOVER */
+.menu-button:hover {
+    transform: translateY(-3px);
+    background: #173bb3;
+    box-shadow: 0 10px 22px rgba(31, 79, 216, 0.45);
+}
+
+/* BUTTON ACTIVE */
+.menu-button:active {
+    transform: scale(0.97);
+}
+
+/* PAYMENT BUTTON HIGHLIGHT */
+.payment-button .menu-button {
+    background: #0ea84a;
+    box-shadow: 0 6px 16px rgba(14, 168, 74, 0.4);
+}
+
+.payment-button .menu-button:hover {
+    background: #0b8c3d;
+}
+
+/* SMALL TEXT (OPTIONAL SUBTEXT) */
+.menu-button small {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+/* MOBILE OPTIMIZATION */
+@media (max-width: 480px) {
+    .container {
+        padding: 25px 20px;
+    }
+
+    .menu-button {
+        font-size: 1rem;
+        padding: 18px 12px;
+    }
+
+    .logo-circle {
+        width: 110px;
+        height: 110px;
+    }
+}
