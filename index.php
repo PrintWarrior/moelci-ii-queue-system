@@ -88,6 +88,27 @@ function redirectBasedOnRole($role)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/index.css">
+    <style>
+        body {
+            position: relative;
+            background-color: white;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: url('assets/imgs/background.png') center center / cover no-repeat;
+            opacity: 0.3;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
     <link rel="icon" type="image/png" href="assets/imgs/moelci_logo.png">
     <title>Moelci-II Login</title>
 </head>

@@ -1,9 +1,9 @@
 <?php
 // Database configuration
-define('DB_HOST', '148.222.53.6');
-define('DB_NAME', 'u127667912_moelci2');
-define('DB_USER', 'u127667912_tangubcity');
-define('DB_PASS', 'Moelci-2tangubcity');
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'moelci-ii');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 
 if (!isset($pdo)) {
     try {

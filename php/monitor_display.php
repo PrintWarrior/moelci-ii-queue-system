@@ -239,7 +239,31 @@ function getOperatingSchedule($pdo)
   return $schedule;
 }
 
+function getActiveAnnouncements($pdo)
+{
+  try {
+    $stmt = $pdo->query("SELECT message FROM announcements WHERE is_active = 1 ORDER BY created_at DESC");
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+  } catch (PDOException $e) {
+    error_log("Announcement error: " . $e->getMessage());
+    return [];
+  }
+}
+
 $schedule = getOperatingSchedule($pdo);
+$announcements = getActiveAnnouncements($pdo);
+$headerMessages = [];
+
+foreach ($announcements as $announcement) {
+  $announcement = trim(preg_replace('/\s+/', ' ', $announcement));
+
+  if ($announcement !== '') {
+    $headerMessages[] = 'ANNOUNCEMENT: ' . $announcement;
+  }
+}
+
+$headerMessages[] = $schedule['text'];
+$headerText = implode(' --- ', $headerMessages) . ' --- ';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -261,30 +285,44 @@ $schedule = getOperatingSchedule($pdo);
       background: #fff;
     }
 
-    /* ===== STATIC CENTERED HEADER ===== */
+    /* ===== RUNNING TEXT HEADER ===== */
     .header {
-      background: #fff176;
+      background: #0a0a0a;
       border: 2px solid #000;
-      height: 90px;
-
+      height: 110px;
       display: flex;
       align-items: center;
-      justify-content: center;
+      overflow: hidden;
     }
 
-    .header-content,
-    .marquee span {
-      font-weight: bold;
-      font-size: clamp(25px, 2vw, 50px);
-      font-size: 18px;
-      color: #333;
-      text-align: center;
-      white-space: nowrap;
-      /* keeps it on one line */
+    .marquee {
+      width: 100%;
       overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-      padding: 0 20px;
+    }
+
+    .marquee-track {
+      display: flex;
+      width: max-content;
+      animation: marqueeScroll 28s linear infinite;
+    }
+
+    .marquee span {
+      flex: 0 0 auto;
+      font-weight: bold;
+      font-size: clamp(36px, 4vw, 70px);
+      color: #d50000;
+      white-space: nowrap;
+      padding: 0 70px;
+    }
+
+    @keyframes marqueeScroll {
+      from {
+        transform: translateX(0);
+      }
+
+      to {
+        transform: translateX(-50%);
+      }
     }
 
 
@@ -393,6 +431,15 @@ $schedule = getOperatingSchedule($pdo);
       border-top: none;
     }
 
+    .fullscreen-button {
+      margin: 10px;
+    }
+
+    :fullscreen .fullscreen-button,
+    :-webkit-full-screen .fullscreen-button {
+      display: none;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -466,17 +513,22 @@ $schedule = getOperatingSchedule($pdo);
       }
     }
   </style>
+  <link rel="icon" type="image/png" href="../assets/imgs/moelci_logo.png">
 </head>
 
 <body>
 <div id="monitorContent">
-  <!-- STATIC HEADER -->
+  <!-- RUNNING TEXT HEADER -->
   <div class="header">
     <div class="marquee">
-      <span><?php echo htmlspecialchars($schedule['text']); ?></span>
+      <div class="marquee-track">
+        <span><?php echo htmlspecialchars($headerText); ?></span>
+        <span aria-hidden="true"><?php echo htmlspecialchars($headerText); ?></span>
+      </div>
     </div>
   </div>
 
+  <div id="queueContent">
   <!-- MAIN DISPLAY -->
   <div class="main">
 
@@ -504,7 +556,7 @@ $schedule = getOperatingSchedule($pdo);
     <!-- CENTER -->
     <div class="center">
       <h1>NOW SERVING</h1>
-      <h2 id="nowServing"><?php echo $queueData['now_serving']; ?></h2>
+      <h2 id="nowServing" data-called-at="<?php echo htmlspecialchars($queueData['serving'][0]['called_at'] ?? ''); ?>"><?php echo $queueData['now_serving']; ?></h2>
 
 <?php if ($queueData['now_serving_service'] != '---'): ?>
 <div id="nowServiceType" class="service-type">
@@ -562,7 +614,8 @@ $schedule = getOperatingSchedule($pdo);
         <td class="waiting-count"><?php echo $waitingSpecialBilling; ?></td>
       </tr>
     </table>
-    <button onclick="openFullscreen()">Go Fullscreen</button>
+    <button class="fullscreen-button" onclick="openFullscreen()">Go Fullscreen</button>
+  </div>
   </div>
 </div>
 
@@ -582,8 +635,23 @@ function refreshMonitor() {
     .then(html => {
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, "text/html");
-      const newContent = doc.getElementById("monitorContent");
-      document.getElementById("monitorContent").innerHTML = newContent.innerHTML;
+      const newContent = doc.getElementById("queueContent");
+      const currentContent = document.getElementById("queueContent");
+
+      if (newContent && currentContent) {
+        currentContent.innerHTML = newContent.innerHTML;
+      }
+
+      const newMarquee = doc.querySelector(".marquee-track");
+      const currentMarquee = document.querySelector(".marquee-track");
+
+      if (
+        newMarquee &&
+        currentMarquee &&
+        newMarquee.textContent.trim() !== currentMarquee.textContent.trim()
+      ) {
+        currentMarquee.innerHTML = newMarquee.innerHTML;
+      }
     });
 }
 
@@ -613,10 +681,12 @@ function checkAnnouncement() {
   if (!ticketEl || !tellerEl) return;
 
   const ticket = ticketEl.textContent.trim();
+  const calledAt = ticketEl.dataset.calledAt || "";
+  const announcementKey = `${ticket}|${calledAt}`;
   const teller = tellerEl.textContent.replace("at","").trim();
 
-  if (ticket !== "---" && ticket !== lastCalled) {
-    lastCalled = ticket;
+  if (ticket !== "---" && announcementKey !== lastCalled) {
+    lastCalled = announcementKey;
     speakNowServing(ticket, teller);
   }
 }

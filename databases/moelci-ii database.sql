@@ -24,6 +24,19 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `announcements`
+--
+
+CREATE TABLE `announcements` (
+  `id` int(11) NOT NULL,
+  `message` text NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `breaks_schedule`
 --
 
@@ -83,7 +96,7 @@ CREATE TABLE `queue_tickets` (
   `service_id` int(11) NOT NULL,
   `customer_id` int(11) DEFAULT NULL,
   `customer_name` varchar(100) DEFAULT NULL,
-  `status` enum('waiting','in_progress','completed','cancelled') DEFAULT 'waiting',
+  `status` enum('waiting','in_progress','completed','cancelled','skipped') DEFAULT 'waiting',
   `priority` enum('low','normal','high') DEFAULT 'normal',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `called_at` timestamp NULL DEFAULT NULL,
@@ -105,7 +118,7 @@ CREATE TABLE `queue_ticket_history` (
   `service_id` int(11) NOT NULL,
   `customer_id` int(11) DEFAULT NULL,
   `customer_name` varchar(100) DEFAULT NULL,
-  `status` enum('waiting','in_progress','completed','cancelled') NOT NULL,
+  `status` enum('waiting','in_progress','completed','cancelled','skipped') NOT NULL,
   `priority` enum('low','normal','high') NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `called_at` timestamp NULL DEFAULT NULL,
@@ -345,6 +358,12 @@ INSERT INTO `users` (`user_id`, `username`, `password_hash`, `email`, `role_id`,
 --
 
 --
+-- Indexes for table `announcements`
+--
+ALTER TABLE `announcements`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `breaks_schedule`
 --
 ALTER TABLE `breaks_schedule`
@@ -407,6 +426,12 @@ ALTER TABLE `users`
 --
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `announcements`
+--
+ALTER TABLE `announcements`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `breaks_schedule`

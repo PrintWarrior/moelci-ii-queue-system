@@ -11,6 +11,25 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
 $response = [];
 
 try {
+    // Analytics date range. Defaults to today so the charts answer "what is happening now?"
+    $analyticsStart = $_GET['analytics_start'] ?? date('Y-m-d');
+    $analyticsEnd = $_GET['analytics_end'] ?? $analyticsStart;
+
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $analyticsStart)) {
+        $analyticsStart = date('Y-m-d');
+    }
+
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $analyticsEnd)) {
+        $analyticsEnd = $analyticsStart;
+    }
+
+    if ($analyticsEnd < $analyticsStart) {
+        [$analyticsStart, $analyticsEnd] = [$analyticsEnd, $analyticsStart];
+    }
+
+    $analyticsStartDateTime = $analyticsStart . ' 00:00:00';
+    $analyticsEndDateTime = $analyticsEnd . ' 23:59:59';
+
     // Get tellers with their queue information
     $tellerQuery = "
         SELECT 
@@ -86,128 +105,131 @@ try {
     $stmt->execute();
     $response['transactions'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Enhanced Analytics data with counts
+    // Analytics summary for the selected date range.
     $analyticsQuery = "
-        SELECT 
+        SELECT
+            COUNT(*) AS total_tickets,
             COUNT(CASE WHEN status = 'completed' THEN 1 END) AS total_served,
             COUNT(CASE WHEN status = 'waiting' THEN 1 END) AS currently_waiting,
-            COALESCE(ROUND(AVG(TIMESTAMPDIFF(MINUTE, created_at, completed_at)), 1), 0) AS avg_wait,
-            (
-                SELECT s.service_name 
-                FROM services s 
-                JOIN queue_tickets qt2 ON s.service_id = qt2.service_id
-                WHERE qt2.status = 'completed'
-                GROUP BY s.service_name 
-                ORDER BY COUNT(*) DESC 
-                LIMIT 1
-            ) AS busiest_service_name,
-            (
-                SELECT COUNT(*) 
-                FROM queue_tickets qt2 
-                JOIN services s ON qt2.service_id = s.service_id
-                WHERE qt2.status = 'completed'
-                GROUP BY s.service_name 
-                ORDER BY COUNT(*) DESC 
-                LIMIT 1
-            ) AS busiest_service_count,
-            (
-                SELECT s.service_name 
-                FROM services s 
-                JOIN queue_tickets qt3 ON s.service_id = qt3.service_id
-                WHERE qt3.status = 'completed'
-                GROUP BY s.service_name 
-                ORDER BY COUNT(*) ASC 
-                LIMIT 1
-            ) AS least_busiest_service_name,
-            (
-                SELECT COUNT(*) 
-                FROM queue_tickets qt3 
-                JOIN services s ON qt3.service_id = s.service_id
-                WHERE qt3.status = 'completed'
-                GROUP BY s.service_name 
-                ORDER BY COUNT(*) ASC 
-                LIMIT 1
-            ) AS least_busiest_service_count,
-            (
-                SELECT CONCAT(u.first_name, ' ', u.last_name)
-                FROM users u
-                JOIN queue_tickets qt4 ON u.user_id = qt4.assigned_user_id
-                WHERE qt4.status = 'completed'
-                GROUP BY u.user_id
-                ORDER BY COUNT(*) DESC
-                LIMIT 1
-            ) AS most_active_teller_name,
-            (
-                SELECT COUNT(*)
-                FROM queue_tickets qt4
-                WHERE qt4.assigned_user_id = (
-                    SELECT u.user_id
-                    FROM users u
-                    JOIN queue_tickets qt5 ON u.user_id = qt5.assigned_user_id
-                    WHERE qt5.status = 'completed'
-                    GROUP BY u.user_id
-                    ORDER BY COUNT(*) DESC
-                    LIMIT 1
-                )
-                AND qt4.status = 'completed'
-            ) AS most_active_teller_count,
-            (
-                SELECT CONCAT(u.first_name, ' ', u.last_name)
-                FROM users u
-                JOIN queue_tickets qt6 ON u.user_id = qt6.assigned_user_id
-                WHERE qt6.status = 'completed'
-                GROUP BY u.user_id
-                ORDER BY COUNT(*) ASC
-                LIMIT 1
-            ) AS least_active_teller_name,
-            (
-                SELECT COUNT(*)
-                FROM queue_tickets qt7
-                WHERE qt7.assigned_user_id = (
-                    SELECT u.user_id
-                    FROM users u
-                    JOIN queue_tickets qt8 ON u.user_id = qt8.assigned_user_id
-                    WHERE qt8.status = 'completed'
-                    GROUP BY u.user_id
-                    ORDER BY COUNT(*) ASC
-                    LIMIT 1
-                )
-                AND qt7.status = 'completed'
-            ) AS least_active_teller_count
-        FROM queue_tickets 
-        WHERE status IN ('completed', 'waiting')
+            COUNT(CASE WHEN status = 'cancelled' THEN 1 END) AS cancelled_count,
+            COUNT(CASE WHEN status = 'skipped' THEN 1 END) AS skipped_count,
+            COALESCE(ROUND(AVG(CASE WHEN called_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, created_at, called_at) END), 1), 0) AS avg_wait,
+            COALESCE(ROUND(AVG(CASE WHEN called_at IS NOT NULL AND completed_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, called_at, completed_at) END), 1), 0) AS avg_service
+        FROM queue_tickets
+        WHERE created_at BETWEEN ? AND ?
     ";
-    
+
     $stmt = $pdo->prepare($analyticsQuery);
-    $stmt->execute();
+    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
     $analyticsData = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Format analytics data to match the expected structure
+    $busiestServiceQuery = "
+        SELECT s.service_name, COUNT(qt.ticket_id) AS ticket_count
+        FROM queue_tickets qt
+        JOIN services s ON qt.service_id = s.service_id
+        WHERE qt.created_at BETWEEN ? AND ?
+        GROUP BY s.service_id, s.service_name
+        ORDER BY ticket_count DESC
+        LIMIT 1
+    ";
+
+    $stmt = $pdo->prepare($busiestServiceQuery);
+    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $busiestService = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $mostActiveTellerQuery = "
+        SELECT CONCAT(u.first_name, ' ', u.last_name) AS teller_name, COUNT(qt.ticket_id) AS served_count
+        FROM queue_tickets qt
+        JOIN users u ON qt.assigned_user_id = u.user_id
+        WHERE qt.status = 'completed'
+          AND qt.created_at BETWEEN ? AND ?
+        GROUP BY u.user_id, teller_name
+        ORDER BY served_count DESC
+        LIMIT 1
+    ";
+
+    $stmt = $pdo->prepare($mostActiveTellerQuery);
+    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $mostActiveTeller = $stmt->fetch(PDO::FETCH_ASSOC);
+
     $response['analytics'] = [
+        "date_range" => $analyticsStart . " to " . $analyticsEnd,
+        "total_tickets" => $analyticsData['total_tickets'] ?? 0,
         "total_served" => $analyticsData['total_served'] ?? 0,
         "currently_waiting" => $analyticsData['currently_waiting'] ?? 0,
+        "cancelled_count" => $analyticsData['cancelled_count'] ?? 0,
+        "skipped_count" => $analyticsData['skipped_count'] ?? 0,
         "avg_wait" => $analyticsData['avg_wait'] ?? 0,
-        "busiest_service" => $analyticsData['busiest_service_name'] ? 
-            $analyticsData['busiest_service_name'] . " (" . $analyticsData['busiest_service_count'] . ")" : "N/A",
-        "least_busiest_service" => $analyticsData['least_busiest_service_name'] ? 
-            $analyticsData['least_busiest_service_name'] . " (" . $analyticsData['least_busiest_service_count'] . ")" : "N/A",
-        "most_active_teller" => $analyticsData['most_active_teller_name'] ? 
-            $analyticsData['most_active_teller_name'] . " (" . $analyticsData['most_active_teller_count'] . ")" : "N/A",
-        "least_active_teller" => $analyticsData['least_active_teller_name'] ? 
-            $analyticsData['least_active_teller_name'] . " (" . $analyticsData['least_active_teller_count'] . ")" : "N/A"
+        "avg_service" => $analyticsData['avg_service'] ?? 0,
+        "busiest_service" => $busiestService ? $busiestService['service_name'] . " (" . $busiestService['ticket_count'] . ")" : "N/A",
+        "most_active_teller" => $mostActiveTeller ? $mostActiveTeller['teller_name'] . " (" . $mostActiveTeller['served_count'] . ")" : "N/A"
     ];
 
-    // Service statistics for chart (all time completed transactions)
+    // Service statistics for the selected date range.
     $serviceStatsQuery = "
-        SELECT s.service_name, COUNT(qt.ticket_id) as ticket_count
+        SELECT s.service_name, COUNT(qt.ticket_id) AS ticket_count
         FROM services s
-        LEFT JOIN queue_tickets qt ON s.service_id = qt.service_id AND qt.status = 'completed'
+        LEFT JOIN queue_tickets qt
+            ON s.service_id = qt.service_id
+           AND qt.created_at BETWEEN ? AND ?
         GROUP BY s.service_id, s.service_name
+        ORDER BY ticket_count DESC, s.service_name ASC
     ";
-    
+
     $stmt = $pdo->prepare($serviceStatsQuery);
-    $stmt->execute();
+    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
     $response['service_stats'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Hourly demand for staffing decisions.
+    $hourStatsQuery = "
+        SELECT HOUR(created_at) AS hour_number, COUNT(*) AS ticket_count
+        FROM queue_tickets
+        WHERE created_at BETWEEN ? AND ?
+        GROUP BY HOUR(created_at)
+        ORDER BY hour_number
+    ";
+
+    $stmt = $pdo->prepare($hourStatsQuery);
+    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $hourRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $hourStats = [];
+    for ($hour = 0; $hour < 24; $hour++) {
+        $hourStats[$hour] = [
+            'hour_label' => date('g A', strtotime(sprintf('%02d:00', $hour))),
+            'ticket_count' => 0
+        ];
+    }
+
+    foreach ($hourRows as $row) {
+        $hour = (int) $row['hour_number'];
+        $hourStats[$hour]['ticket_count'] = (int) $row['ticket_count'];
+    }
+
+    $response['hour_stats'] = array_values($hourStats);
+
+    // Teller performance table for the selected date range.
+    $tellerPerformanceQuery = "
+        SELECT
+            CONCAT(u.first_name, ' ', u.last_name) AS teller_name,
+            COUNT(CASE WHEN qt.status = 'completed' THEN 1 END) AS served_count,
+            COUNT(CASE WHEN qt.status = 'cancelled' THEN 1 END) AS cancelled_count,
+            COUNT(CASE WHEN qt.status = 'skipped' THEN 1 END) AS skipped_count,
+            COALESCE(ROUND(AVG(CASE WHEN qt.called_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, qt.created_at, qt.called_at) END), 1), 0) AS avg_wait,
+            COALESCE(ROUND(AVG(CASE WHEN qt.called_at IS NOT NULL AND qt.completed_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, qt.called_at, qt.completed_at) END), 1), 0) AS avg_service
+        FROM users u
+        LEFT JOIN queue_tickets qt
+            ON u.user_id = qt.assigned_user_id
+           AND qt.created_at BETWEEN ? AND ?
+        WHERE u.role_id = (SELECT role_id FROM roles WHERE role_name = 'Teller')
+          AND u.is_active = 1
+        GROUP BY u.user_id, teller_name
+        ORDER BY served_count DESC, teller_name ASC
+    ";
+
+    $stmt = $pdo->prepare($tellerPerformanceQuery);
+    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $response['teller_performance'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Settings data
     $settingsQuery = "
