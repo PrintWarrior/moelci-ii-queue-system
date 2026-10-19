@@ -1,4 +1,4 @@
-﻿<!-- Edit User modal: populated by openEditModal() in scripts.php. -->
+<!-- Edit User modal: populated by openEditModal() in scripts.php. -->
   <!-- Edit User Modal -->
   <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -7,7 +7,7 @@
           <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <form method="POST" id="editUserForm">
+        <form method="POST" id="editUserForm" data-confirm="Save changes to this user?">
           <div class="modal-body">
             <input type="hidden" name="user_id" id="editUserId">
 

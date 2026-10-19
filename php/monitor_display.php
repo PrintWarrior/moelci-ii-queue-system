@@ -1,5 +1,5 @@
 <?php
-require_once '../includes/db_connection.php';
+require_once __DIR__ . '/../includes/db_connection.php';
 
 // --- 1️⃣ Get served counts first ---
 $sql = "
@@ -29,7 +29,7 @@ function getQueueData($pdo)
   $data = [];
 
   try {
-    // Waiting tickets (limit 30)
+    // All waiting tickets contribute to the public waiting totals.
     $sql = "SELECT
   qt.ticket_number,
   qt.customer_type,
@@ -43,8 +43,7 @@ function getQueueData($pdo)
                         WHEN 'normal' THEN 2 
                         WHEN 'low' THEN 3 
                     END,
-                    qt.created_at ASC
-                LIMIT 30";
+                    qt.created_at ASC";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
 
@@ -111,23 +110,14 @@ if (count($data['serving']) > 0) {
 // Get queue data
 $queueData = getQueueData($pdo);
 
-// --- 3️⃣ Teller capabilities ---
-$tellerCapabilities = [
-  5  => ['regular'],           // Teller 1
-  8  => ['pwd', 'regular'],    // Teller 2
-  10 => ['regular'],           // Teller 3
-  11 => ['pwd', 'regular'],    // Teller 4
-];
-
 // --- 4️⃣ Organize teller data ---
 $tellerData = [];
 foreach ($queueData['tellers'] as $teller) {
   $ticket = '---';
   $userId = $teller['user_id'];
-  $allowedTypes = $tellerCapabilities[$userId] ?? ['regular'];
 
   foreach ($queueData['serving'] as $serving) {
-    if ($serving['assigned_user_id'] == $userId && in_array($serving['customer_type'], $allowedTypes)) {
+    if ($serving['assigned_user_id'] == $userId) {
       $ticket = $serving['ticket_number'];
       break;
     }
@@ -270,431 +260,140 @@ $headerText = implode(' --- ', $headerMessages) . ' --- ';
 
 <head>
   <meta charset="UTF-8">
-  <title>MOELCI-ll TV display</title>
+  <title>MOELCI-II Queue Monitor</title>
+  <meta name="color-scheme" content="light">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    /* Your existing CSS styles */
-    * {
-      box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    body {
-      margin: 0;
-      background: #fff;
-    }
-
-    /* ===== RUNNING TEXT HEADER ===== */
-    .header {
-      background: #0a0a0a;
-      border: 2px solid #000;
-      height: 110px;
-      display: flex;
-      align-items: center;
-      overflow: hidden;
-    }
-
-    .marquee {
-      width: 100%;
-      overflow: hidden;
-    }
-
-    .marquee-track {
-      display: flex;
-      width: max-content;
-      animation: marqueeScroll 28s linear infinite;
-    }
-
-    .marquee span {
-      flex: 0 0 auto;
-      font-weight: bold;
-      font-size: clamp(36px, 4vw, 70px);
-      color: #d50000;
-      white-space: nowrap;
-      padding: 0 70px;
-    }
-
-    @keyframes marqueeScroll {
-      from {
-        transform: translateX(0);
-      }
-
-      to {
-        transform: translateX(-50%);
-      }
-    }
-
-
-
-    /* ===== MAIN WRAPPER ===== */
-    .main {
-      display: flex;
-      width: 100%;
-      height: 583px;
-      max-height: 583px;
-      border-left: 2px solid #000;
-      border-right: 2px solid #000;
-    }
-
-    /* ===== SIDE PANELS ===== */
-    .side {
-      width: 14%;
-      min-width: 180px;
-      background: #e0e0e0;
-      border: 1px solid #000;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .side .box {
-      flex: 1;
-      border-bottom: 1px solid #000;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .side .box:last-child {
-      border-bottom: none;
-    }
-
-    .side h3 {
-  margin: 0;
-  font-size: clamp(28px, 2.5vw, 48px);
-  text-align: center;
-}
-
-
-   .side p {
-  margin: 0;
-  text-align: center;
-  font-size: clamp(22px, 2vw, 40px);
-  color: #333;
-}
-
-    .ticket-number {
-  font-size: clamp(56px, 4.5vw, 10px);
-  font-weight: bold;
-  color: #d32f2f;
-  text-align: center;
-  margin-top: 20px;
-}
-
-    /* ===== CENTER DISPLAY ===== */
-    .center {
-      flex: 1;
-      border: 1px solid #000;
-      text-align: center;
-
-      padding: 60px 30px;
-
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-
-      background: linear-gradient(135deg, #fdfdfd 0%, #ececec 100%);
-    }
-
-    .center h1 {
-  margin: 0;
-  font-size: clamp(80px, 10vw, 140px);
-  color: #333;
-  text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
-}
-
-    .center h2 {
-      margin: 30px 0;
-      font-size: clamp(80px, 10vw, 140px);
-      color: #d32f2f;
-      font-weight: 900;
-      letter-spacing: 2px;
-      text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.25);
-    }
-
-    .center h3 {
-      font-size: clamp(36px, 4vw, 52px);
-      color: #333;
-      margin-top: 20px;
-    }
-
-    .service-type {
-      font-size: clamp(20px, 3vw, 28px);
-      color: #666;
-      margin-top: 10px;
-    }
-
-    /* ===== BOTTOM TABLE ===== */
-    .table-container {
-      border: 1px solid #000;
-      border-top: none;
-    }
-
-    .fullscreen-button {
-      margin: 10px;
-    }
-
-    :fullscreen .fullscreen-button,
-    :-webkit-full-screen .fullscreen-button {
-      display: none;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: center;
-    }
-
-    th, td {
-  border: 1px solid #000;
-  padding: 14px;
-  font-size: clamp(24px, 2vw, 42px);
-}
-
-    th {
-      background: #e0e0e0;
-    }
-
-    .waiting-count {
-  font-weight: bold;
-  color: #d32f2f;
-  font-size: clamp(28px, 2.5vw, 48px);
-}
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 900px) {
-      .main {
-        flex-direction: column;
-      }
-
-      .side {
-        width: 100%;
-        flex-direction: row;
-      }
-
-      .side .box {
-        flex: 1;
-        border-bottom: none;
-        border-right: 1px solid #000;
-        min-height: 150px;
-      }
-
-      .side .box:last-child {
-        border-right: none;
-      }
-
-      .ticket-number {
-        font-size: 24px;
-      }
-
-      .center h2 {
-        margin: 20px 0;
-      }
-    }
-
-    @media (max-width: 600px) {
-      .side .box {
-        padding: 10px;
-      }
-
-      .side h3 {
-        font-size: 16px;
-      }
-
-      .ticket-number {
-        font-size: 20px;
-      }
-
-      th,
-      td {
-        padding: 6px;
-        font-size: 14px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="../css/monitor_display.css">
   <link rel="icon" type="image/png" href="../assets/imgs/moelci_logo.png">
 </head>
 
 <body>
 <div id="monitorContent">
-  <!-- RUNNING TEXT HEADER -->
-  <div class="header">
-    <div class="marquee">
-      <div class="marquee-track">
-        <span><?php echo htmlspecialchars($headerText); ?></span>
-        <span aria-hidden="true"><?php echo htmlspecialchars($headerText); ?></span>
-      </div>
-    </div>
-  </div>
-
-  <div id="queueContent">
-  <!-- MAIN DISPLAY -->
-  <div class="main">
-
-    <!-- LEFT TELLERS -->
-    <div class="side">
-      <div class="box">
+  <header class="header" aria-label="Announcements and operating schedule">
+    <div class="marquee"><div class="marquee-track">
+      <span><?php echo htmlspecialchars($headerText); ?></span>
+      <span aria-hidden="true"><?php echo htmlspecialchars($headerText); ?></span>
+    </div></div>
+  </header>
+  <main id="queueContent">
+    <div class="main">
+      <aside class="side" aria-label="Payment tellers">
+      <section class="box<?php echo ($queueData['now_serving'] !== '---' && $tellerData[0]['ticket'] === $queueData['now_serving']) ? ' is-current' : ''; ?>" aria-label="<?php echo htmlspecialchars($tellerData[0]['name']); ?>">
         <h3><?php echo htmlspecialchars($tellerData[0]['name']); ?></h3>
-        <div class="ticket-number"><?php echo $tellerData[0]['ticket']; ?></div>
-        <p style="font-size:14px;color:#333;">
-          Served: <strong><?php echo $tellerData[0]['count']; ?></strong>
-        </p>
-      </div>
-
-
-
-      <div class="box">
+        <div class="ticket-number"><?php echo htmlspecialchars($tellerData[0]['ticket']); ?></div>
+        <p>Served today: <strong><?php echo (int) $tellerData[0]['count']; ?></strong></p>
+      </section>
+      <section class="box<?php echo ($queueData['now_serving'] !== '---' && $tellerData[1]['ticket'] === $queueData['now_serving']) ? ' is-current' : ''; ?>" aria-label="<?php echo htmlspecialchars($tellerData[1]['name']); ?>">
         <h3><?php echo htmlspecialchars($tellerData[1]['name']); ?></h3>
-        <div class="ticket-number"><?php echo $tellerData[1]['ticket']; ?></div>
-        <p style="font-size:14px;color:#333;">
-          Served: <strong><?php echo $tellerData[1]['count']; ?></strong>
-        </p>
-      </div>
-    </div>
-
-    <!-- CENTER -->
-    <div class="center">
-      <h1>NOW SERVING</h1>
-      <h2 id="nowServing" data-called-at="<?php echo htmlspecialchars($queueData['serving'][0]['called_at'] ?? ''); ?>"><?php echo $queueData['now_serving']; ?></h2>
-
-<?php if ($queueData['now_serving_service'] != '---'): ?>
-<div id="nowServiceType" class="service-type">
-  <?php echo htmlspecialchars($queueData['now_serving_service']); ?>
-</div>
-<?php endif; ?>
-
-<h3 id="nowTeller">at <?php echo $queueData['now_serving_teller']; ?></h3>
-    </div>
-
-    <!-- RIGHT TELLERS -->
-    <div class="side">
-      <div class="box">
+        <div class="ticket-number"><?php echo htmlspecialchars($tellerData[1]['ticket']); ?></div>
+        <p>Served today: <strong><?php echo (int) $tellerData[1]['count']; ?></strong></p>
+      </section>
+      </aside>
+      <section class="center<?php echo $queueData['now_serving'] === '---' ? ' is-idle' : ''; ?>" aria-label="Latest called ticket">
+        <h1><?php echo $queueData['now_serving'] === '---' ? 'PLEASE WAIT' : 'NOW SERVING'; ?></h1>
+        <div id="nowServing" class="main-ticket" data-called-at="<?php echo htmlspecialchars($queueData['serving'][0]['called_at'] ?? ''); ?>"><?php echo htmlspecialchars($queueData['now_serving']); ?></div>
+        <div id="nowServiceType" class="service-type"><?php echo $queueData['now_serving_service'] !== '---' ? htmlspecialchars($queueData['now_serving_service']) : 'Your number will appear here when called'; ?></div>
+        <h2 id="nowTeller" class="teller-destination" data-teller="<?php echo htmlspecialchars($queueData['now_serving_teller']); ?>"><?php echo $queueData['now_serving'] !== '---' ? 'Proceed to ' . htmlspecialchars($queueData['now_serving_teller']) : 'Please watch this screen'; ?></h2>
+      </section>
+      <aside class="side" aria-label="Notice of Billing tellers">
+      <section class="box<?php echo ($queueData['now_serving'] !== '---' && $tellerData[2]['ticket'] === $queueData['now_serving']) ? ' is-current' : ''; ?>" aria-label="<?php echo htmlspecialchars($tellerData[2]['name']); ?>">
         <h3><?php echo htmlspecialchars($tellerData[2]['name']); ?></h3>
-        <div class="ticket-number"><?php echo $tellerData[2]['ticket']; ?></div>
-        <p style="font-size:14px;color:#333;">
-          Served: <strong><?php echo $tellerData[2]['count']; ?></strong>
-      </div>
-
-      <div class="box">
+        <div class="ticket-number"><?php echo htmlspecialchars($tellerData[2]['ticket']); ?></div>
+        <p>Served today: <strong><?php echo (int) $tellerData[2]['count']; ?></strong></p>
+      </section>
+      <section class="box<?php echo ($queueData['now_serving'] !== '---' && $tellerData[3]['ticket'] === $queueData['now_serving']) ? ' is-current' : ''; ?>" aria-label="<?php echo htmlspecialchars($tellerData[3]['name']); ?>">
         <h3><?php echo htmlspecialchars($tellerData[3]['name']); ?></h3>
-        <div class="ticket-number"><?php echo $tellerData[3]['ticket']; ?></div>
-        <p style="font-size:14px;color:#333;">
-          Served: <strong><?php echo $tellerData[3]['count']; ?></strong>
-      </div>
+        <div class="ticket-number"><?php echo htmlspecialchars($tellerData[3]['ticket']); ?></div>
+        <p>Served today: <strong><?php echo (int) $tellerData[3]['count']; ?></strong></p>
+      </section>
+      </aside>
     </div>
-
-  </div>
-
-  <!-- BOTTOM TABLE -->
-  <div class="table-container">
-    <table>
-      <tr>
-        <th>Lane Type</th>
-        <th>Service Type</th>
-        <th>Waiting...</th>
-        <th>Lane Type</th>
-        <th>Service Type</th>
-        <th>Waiting...</th>
-      </tr>
-      <tr>
-        <td>Regular</td>
-        <td>Payment</td>
-        <td class="waiting-count"><?php echo $waitingRegularPayment; ?></td>
-        <td>Regular</td>
-        <td>Billing</td>
-        <td class="waiting-count"><?php echo $waitingRegularBilling; ?></td>
-      </tr>
-      <tr>
-        <td>Special</td>
-        <td>Payment</td>
-        <td class="waiting-count"><?php echo $waitingSpecialPayment; ?></td>
-        <td>Special</td>
-        <td>Billing</td>
-        <td class="waiting-count"><?php echo $waitingSpecialBilling; ?></td>
-      </tr>
-    </table>
-    <button class="fullscreen-button" onclick="openFullscreen()">Go Fullscreen</button>
-  </div>
-  </div>
+    <section class="table-container" aria-label="Customers waiting by lane and service">
+      <h2 id="waitingTitle" class="waiting-title">Customers waiting</h2>
+      <table aria-labelledby="waitingTitle">
+        <thead><tr><th scope="col">Queue lane</th><th scope="col">Payment</th><th scope="col">Notice of Billing</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Regular</th><td class="waiting-count"><?php echo $waitingRegularPayment; ?></td><td class="waiting-count"><?php echo $waitingRegularBilling; ?></td></tr>
+          <tr><th scope="row">Priority</th><td class="waiting-count"><?php echo $waitingSpecialPayment; ?></td><td class="waiting-count"><?php echo $waitingSpecialBilling; ?></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
 </div>
-
-  <script>
-function openFullscreen() {
-  document.documentElement.requestFullscreen();
-  startAutoRefresh();
-}
-
-function startAutoRefresh() {
-  setInterval(refreshMonitor, 2000);
-}
-
-function refreshMonitor() {
-  fetch(window.location.href)
-    .then(res => res.text())
-    .then(html => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-      const newContent = doc.getElementById("queueContent");
-      const currentContent = document.getElementById("queueContent");
-
-      if (newContent && currentContent) {
-        currentContent.innerHTML = newContent.innerHTML;
-      }
-
-      const newMarquee = doc.querySelector(".marquee-track");
-      const currentMarquee = document.querySelector(".marquee-track");
-
-      if (
-        newMarquee &&
-        currentMarquee &&
-        newMarquee.textContent.trim() !== currentMarquee.textContent.trim()
-      ) {
-        currentMarquee.innerHTML = newMarquee.innerHTML;
-      }
-    });
-}
-
-</script>
+<div id="connectionStatus" role="status" hidden>Updates paused. Reconnecting…</div>
 
 <script>
-let lastCalled = "";
+let lastCalled = '';
+let refreshInProgress = false;
+
+// Keep the ticker speed steady even when announcements become longer.
+function sizeMarquee() {
+  const track = document.querySelector('.marquee-track');
+  if (!track) return;
+  const pixelsPerSecond = Math.max(36, window.innerWidth * 0.04);
+  track.style.setProperty('--marquee-duration', (track.scrollWidth / 2 / pixelsPerSecond) + 's');
+}
 
 function speakNowServing(ticket, teller) {
   if (!('speechSynthesis' in window)) return;
-
-  const text = `Now serving ${ticket} at ${teller}`;
-  const utter = new SpeechSynthesisUtterance(text);
-
+  const utter = new SpeechSynthesisUtterance('Now serving ' + ticket + ' at ' + teller);
   utter.rate = 0.9;
   utter.pitch = 1;
   utter.volume = 1;
-
-  speechSynthesis.cancel(); // stop previous
-  speechSynthesis.speak(utter);
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utter);
 }
 
 function checkAnnouncement() {
-  const ticketEl = document.getElementById("nowServing");
-  const tellerEl = document.getElementById("nowTeller");
-
+  const ticketEl = document.getElementById('nowServing');
+  const tellerEl = document.getElementById('nowTeller');
   if (!ticketEl || !tellerEl) return;
-
   const ticket = ticketEl.textContent.trim();
-  const calledAt = ticketEl.dataset.calledAt || "";
-  const announcementKey = `${ticket}|${calledAt}`;
-  const teller = tellerEl.textContent.replace("at","").trim();
+  if (!ticket || ticket === '---') { lastCalled = ''; return; }
+  const teller = tellerEl.dataset.teller;
+  const key = ticket + '|' + teller + '|' + (ticketEl.dataset.calledAt || '');
+  if (key === lastCalled) return;
+  lastCalled = key;
+  speakNowServing(ticket, teller);
+}
 
-  if (ticket !== "---" && announcementKey !== lastCalled) {
-    lastCalled = announcementKey;
-    speakNowServing(ticket, teller);
+async function refreshMonitor() {
+  if (refreshInProgress) return;
+  refreshInProgress = true;
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(window.location.href, { cache: 'no-store', signal: controller.signal });
+    if (!response.ok) throw new Error('Monitor request failed');
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const incoming = doc.getElementById('queueContent');
+    const current = document.getElementById('queueContent');
+    const newMarquee = doc.querySelector('.marquee-track');
+    const currentMarquee = document.querySelector('.marquee-track');
+    if (!incoming || !current || !newMarquee || !currentMarquee) throw new Error('Incomplete monitor response');
+    if (incoming.innerHTML !== current.innerHTML) current.innerHTML = incoming.innerHTML;
+    if (newMarquee.textContent.trim() !== currentMarquee.textContent.trim()) {
+      currentMarquee.innerHTML = newMarquee.innerHTML;
+      sizeMarquee();
+    }
+    document.getElementById('connectionStatus').hidden = true;
+    checkAnnouncement();
+  } catch (error) {
+    // Preserve the last readable queue while retrying.
+    document.getElementById('connectionStatus').hidden = false;
+  } finally {
+    window.clearTimeout(timeout);
+    refreshInProgress = false;
+    window.setTimeout(refreshMonitor, 2000);
   }
 }
 
-// run after every refresh
-setInterval(checkAnnouncement, 1000);
+window.addEventListener('resize', sizeMarquee);
+sizeMarquee();
+checkAnnouncement();
+window.setTimeout(refreshMonitor, 2000);
 </script>
-
 </body>
-
 </html>

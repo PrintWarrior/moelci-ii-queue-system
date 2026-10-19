@@ -1,4 +1,4 @@
-﻿<!-- Settings tab: user management, transaction history filters, operating hours, and break schedules. -->
+<!-- Settings tab: user management, transaction history filters, operating hours, and break schedules. -->
   <!-- Settings Section -->
   <div id="settings" class="section" style="display:none;">
     <div class="card p-3">
@@ -26,11 +26,18 @@
           <div class="alert alert-success"><?php echo $user_message; ?></div>
         <?php endif; ?>
 
+        <?php if (isset($user_error_message)): ?>
+          <div class="alert alert-danger" role="alert"><?php echo htmlspecialchars($user_error_message); ?></div>
+        <?php endif; ?>
+
         <h5>Add New User</h5>
         <form method="POST" class="settings-section">
           <div class="form-grid">
             <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
+            <div class="password-field">
+              <input type="password" id="newUserPassword" name="password" placeholder="Enter your password" aria-label="Password" autocomplete="new-password" required>
+              <button type="button" id="newUserPasswordToggle" class="password-toggle" aria-controls="newUserPassword" aria-label="Show password" aria-pressed="false" hidden>Show</button>
+            </div>
             <input type="email" name="email" placeholder="Email">
             <input type="text" name="first_name" placeholder="First Name" required>
             <input type="text" name="last_name" placeholder="Last Name" required>
@@ -54,7 +61,7 @@
               <?php endforeach; ?>
             </div>
           </div>
-          <button type="submit" name="add_user" class="btn btn-primary mt-3">Add User</button>
+          <button type="submit" name="add_user" data-confirm="Create this user account?" class="btn btn-primary mt-3">Add User</button>
         </form>
 
         <h5 class="mt-4">Existing Users</h5>
@@ -97,12 +104,18 @@
                     ?>
                   </td>
                   <td><?php echo $user['is_active'] ? 'Active' : 'Inactive'; ?></td>
-                  <td class="user-actions">
+                  <td>
+                    <?php if (in_array($user['role_name'], ['Admin', 'Customer'], true)): ?>
+                      <span class="text-muted small">Protected account</span>
+                    <?php else: ?>
+                    <div class="user-actions">
                     <button class="btn btn-sm btn-warning" onclick="openEditModal(<?php echo $user['user_id']; ?>)">Edit</button>
                     <form method="POST" style="display:inline;">
                       <input type="hidden" name="user_id" value="<?php echo $user['user_id']; ?>">
-                      <button type="submit" name="delete_user" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                      <button type="submit" name="delete_user" data-confirm="Deactivate this user? They will no longer be able to sign in." class="btn btn-sm btn-danger">Delete</button>
                     </form>
+                    </div>
+                    <?php endif; ?>
                   </td>
                 </tr>
               <?php endforeach; ?>
@@ -128,7 +141,7 @@
             placeholder="Example: We will have a party coming Friday. No services available."
             required
           ></textarea>
-          <button type="submit" name="add_announcement" class="btn btn-primary mt-3">Add Announcement</button>
+          <button type="submit" name="add_announcement" data-confirm="Publish this announcement on the monitor?" class="btn btn-primary mt-3">Add Announcement</button>
         </form>
 
         <h5 class="mt-4">Active Announcements</h5>
@@ -142,7 +155,7 @@
               <span><?php echo nl2br(htmlspecialchars($announcement['message'])); ?></span>
               <form method="POST" action="#announcements" style="display:inline;">
                 <input type="hidden" name="announcement_id" value="<?php echo $announcement['id']; ?>">
-                <button type="submit" name="delete_announcement" class="btn btn-sm btn-danger">Remove</button>
+                <button type="submit" name="delete_announcement" data-confirm="Remove this announcement from the monitor?" class="btn btn-sm btn-danger">Remove</button>
               </form>
             </div>
           <?php endforeach; ?>
@@ -155,7 +168,7 @@
   <h5>Transaction History</h5>
 <div class="row mb-2">
   <div class="col-md-12 mb-3">
-    <form method="GET" action="export_history.php" class="d-flex flex-wrap align-items-center gap-2">
+    <form method="GET" data-confirm="Export this transaction history to Excel?" action="export_history.php" class="d-flex flex-wrap align-items-center gap-2">
       <select name="period" class="form-control" style="max-width: 180px;">
         <option value="daily">Daily</option>
         <option value="weekly">Weekly</option>
@@ -257,24 +270,6 @@
   </div>
 </div>
 
-<script> //SEARCH NUMBER
-function searchTicketNumber() {
-    const input = document.getElementById("ticketSearch").value.toUpperCase();
-    const table = document.getElementById("historyTable");
-    const rows = table.getElementsByTagName("tr");
-
-    for (let i = 1; i < rows.length; i++) {
-        const ticketCell = rows[i].getElementsByTagName("td")[0];
-        if (ticketCell) {
-            const txtValue = ticketCell.textContent || ticketCell.innerText;
-            rows[i].style.display = txtValue.toUpperCase().includes(input)
-                ? ""
-                : "none";
-        }
-    }
-}
-</script>
-
 <script> //FILTER
 function applyFilters() {
     const service = document.getElementById("serviceFilter").value.toUpperCase();
@@ -342,7 +337,7 @@ function applyFilters() {
               </div>
             </div>
           <?php endforeach; ?>
-          <button type="submit" name="update_hours" class="btn btn-primary mt-3">Update Hours</button>
+          <button type="submit" name="update_hours" data-confirm="Save these operating hours?" class="btn btn-primary mt-3">Update Hours</button>
         </form>
 
         <div class="row mt-4">
@@ -358,7 +353,7 @@ function applyFilters() {
                 <input type="text" name="break_name" placeholder="Break Name" class="form-control" required>
                 <input type="time" name="start_time" class="form-control" required>
                 <input type="time" name="end_time" class="form-control" required>
-                <button type="submit" name="add_break" class="btn btn-success">Add</button>
+                <button type="submit" name="add_break" data-confirm="Add this break schedule?" class="btn btn-success">Add</button>
               </div>
             </form>
 
@@ -368,7 +363,7 @@ function applyFilters() {
                   <span><?php echo htmlspecialchars($break['break_name']); ?> (<?php echo $break['start_time'] . ' - ' . $break['end_time']; ?>)</span>
                   <form method="POST" style="display:inline;">
                     <input type="hidden" name="break_id" value="<?php echo $break['id']; ?>">
-                    <button type="submit" name="delete_break" class="btn btn-sm btn-danger">Remove</button>
+                    <button type="submit" name="delete_break" data-confirm="Remove this break schedule?" class="btn btn-sm btn-danger">Remove</button>
                   </form>
                 </div>
               <?php endforeach; ?>

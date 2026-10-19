@@ -44,14 +44,14 @@ $lanes = [
     [
         'type' => 'regular',
         'class' => 'regular-lane',
-        'label' => 'Regular',
-        'description' => 'Standard queue lane',
+        'label' => 'Regular lane',
+        'description' => 'For regular transactions',
     ],
     [
         'type' => 'pwd_elder',
         'class' => 'pwd-lane',
-        'label' => 'PWD / Elder',
-        'description' => 'Priority queue lane',
+        'label' => 'Priority lane',
+        'description' => 'For senior citizens, persons with disabilities (PWD), and pregnant women.',
     ],
 ];
 
@@ -123,6 +123,7 @@ if (isset(
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../css/customer_board.css">
     <link rel="icon" type="image/png" href="../assets/imgs/moelci_logo.png">
@@ -146,7 +147,10 @@ if (isset(
             .lane-grid,
             .empty-state,
             .buttons-container,
-            .print-note {
+            .print-note,
+            .customer-instructions,
+            .customer-footer,
+            .confirm-overlay {
                 display: none !important;
             }
 
@@ -167,6 +171,7 @@ if (isset(
     </style>
 </head>
 <body>
+    <svg class="svg-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><symbol id="customer-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol><symbol id="customer-print" viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H3V9h18v8h-4M7 14h10v7H7ZM17 11h1"/></symbol><symbol id="customer-user" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol><symbol id="customer-priority" viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></symbol></defs></svg>
     <main class="dashboard-shell <?php echo $show_ticket ? 'has-ticket' : ''; ?>" id="dashboardShell">
         <section class="header-panel">
             <div class="brand-block">
@@ -187,13 +192,17 @@ if (isset(
         </section>
 
         <?php if (!empty($error_message)): ?>
-            <div class="error-message" id="errorMessage">
+            <div class="error-message" id="errorMessage" role="alert">
                 <?php echo htmlspecialchars($error_message); ?>
             </div>
         <?php else: ?>
-            <div class="error-message" id="errorMessage" hidden></div>
+            <div class="error-message" id="errorMessage" role="alert" hidden></div>
         <?php endif; ?>
 
+        <section class="customer-instructions" aria-label="How to get your ticket">
+            <h2>Choose your lane, then tap a service.</h2>
+            <ol><li><span>1</span>Choose a service below</li><li><span>2</span>Print your ticket</li><li><span>3</span>Wait for your number</li></ol>
+        </section>
         <section class="lane-grid" aria-label="Queue ticket lanes">
             <?php foreach ($lanes as $lane): ?>
                 <?php $lane_disabled = $show_ticket && $locked_customer_type !== $lane['type']; ?>
@@ -202,8 +211,8 @@ if (isset(
                     data-lane="<?php echo htmlspecialchars($lane['type']); ?>"
                 >
                     <div class="lane-heading">
+                        <div class="lane-title"><span class="lane-icon"><svg class="icon" aria-hidden="true"><use href="#customer-<?php echo $lane['type'] === 'regular' ? 'user' : 'priority'; ?>"></use></svg></span><h2><?php echo htmlspecialchars($lane['label']); ?></h2></div>
                         <p><?php echo htmlspecialchars($lane['description']); ?></p>
-                        <h2><?php echo htmlspecialchars($lane['label']); ?></h2>
                     </div>
 
                     <div class="service-list">
@@ -218,7 +227,7 @@ if (isset(
                                     <?php echo $lane_disabled ? 'disabled' : ''; ?>
                                 >
                                     <span><?php echo htmlspecialchars($service['service_name']); ?></span>
-                                    <span class="button-arrow">&rarr;</span>
+                                    <svg class="icon button-arrow" aria-hidden="true"><use href="#customer-arrow"></use></svg>
                                 </button>
                             </form>
                         <?php endforeach; ?>
@@ -231,6 +240,7 @@ if (isset(
                 class="ticket-panel"
                 id="ticketPanel"
                 aria-label="Generated queue ticket"
+                tabindex="-1"
                 <?php echo $show_ticket ? '' : 'hidden'; ?>
             >
                 <div class="ticket-container">
@@ -263,19 +273,19 @@ if (isset(
 
                 <div class="buttons-container">
                     <button class="btn btn-print" onclick="printTicket()">
-                        Print ticket &rarr;
+                        <svg class="icon" aria-hidden="true"><use href="#customer-print"></use></svg> Print ticket
                     </button>
                     <button class="btn btn-new-ticket" onclick="getNewTicket()">
                         Get Another Ticket
                     </button>
                 </div>
-                <p class="print-note">Please keep this number and wait for it to be called.</p>
+                <p class="print-note">Print your ticket and keep it. Wait for your number to be called.</p>
             </section>
 
         <div class="confirm-overlay" id="confirmOverlay" hidden>
-            <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+            <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmDescription">
                 <h2 id="confirmTitle">Get another ticket?</h2>
-                <p>Clear this ticket and choose a different service.</p>
+                <p id="confirmDescription">Clear the ticket from this screen? Your queue number will stay active.</p>
                 <div class="confirm-actions">
                     <button type="button" class="btn btn-new-ticket" id="confirmCancel">Cancel</button>
                     <button type="button" class="btn btn-print" id="confirmContinue">Continue</button>
@@ -288,6 +298,7 @@ if (isset(
                 No active services are available right now.
             </div>
         <?php endif; ?>
+        <footer class="customer-footer">Need help? Please ask a MOELCI-II staff member.</footer>
     </main>
 
     <script src="../js/time.js"></script>
@@ -307,6 +318,9 @@ if (isset(
         const confirmContinue = document.getElementById('confirmContinue');
 
         let shouldRestoreFullscreen = false;
+        let ticketRequestInProgress = false;
+        let pendingConfirmation = null;
+        let confirmationOpener = null;
 
         function updateFullscreenButton() {
             fullscreenButton.textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen';
@@ -380,8 +394,15 @@ if (isset(
         }
 
         ticketForms.forEach(function (form) {
-            form.addEventListener('submit', function (event) {
+            form.addEventListener('submit', async function (event) {
                 event.preventDefault();
+                if (ticketRequestInProgress || pendingConfirmation) return;
+                const service = form.elements.namedItem('service_name').value;
+                const lane = form.elements.namedItem('customer_type').value === 'regular' ? 'Regular lane' : 'Priority lane';
+                rememberFullscreen();
+                const confirmed = await askCustomer('Is this correct?', lane + ' — ' + service, 'Create ticket');
+                if (!confirmed) return;
+                ticketRequestInProgress = true;
                 clearError();
 
                 fetch(form.action, {
@@ -401,10 +422,12 @@ if (isset(
                         }
 
                         showTicket(data.ticket);
+                        ticketPanel.focus({ preventScroll: true });
                     })
                     .catch(function () {
                         showError('Unable to generate a ticket right now. Please try again.');
-                    });
+                    })
+                    .finally(function () { ticketRequestInProgress = false; });
             });
         });
 
@@ -444,20 +467,44 @@ if (isset(
                 });
         }
 
-        function getNewTicket() {
-            rememberFullscreen();
+        function askCustomer(title, description, continueLabel) {
+            if (pendingConfirmation) return Promise.resolve(false);
+            confirmationOpener = document.activeElement;
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmDescription').textContent = description;
+            confirmContinue.textContent = continueLabel;
             confirmOverlay.hidden = false;
-            confirmContinue.focus();
+            const result = new Promise(resolve => { pendingConfirmation = resolve; });
+            confirmCancel.focus();
+            return result;
         }
 
-        confirmCancel.addEventListener('click', function () {
+        function closeConfirmation(confirmed) {
+            if (!pendingConfirmation) return;
+            const resolve = pendingConfirmation;
+            pendingConfirmation = null;
             confirmOverlay.hidden = true;
-            restoreFullscreen();
-        });
+            confirmationOpener?.focus();
+            resolve(confirmed);
+        }
 
-        confirmContinue.addEventListener('click', function () {
-            confirmOverlay.hidden = true;
-            clearCurrentTicket();
+        async function getNewTicket() {
+            if (ticketRequestInProgress || pendingConfirmation) return;
+            rememberFullscreen();
+            if (await askCustomer('Get another ticket?', 'Clear this screen? Your current queue number will stay active.', 'Start again')) {
+                clearCurrentTicket();
+            }
+        }
+
+        confirmCancel.addEventListener('click', () => closeConfirmation(false));
+        confirmContinue.addEventListener('click', () => closeConfirmation(true));
+        document.addEventListener('keydown', function (event) {
+            if (confirmOverlay.hidden) return;
+            if (event.key === 'Escape') { event.preventDefault(); closeConfirmation(false); }
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                (document.activeElement === confirmCancel ? confirmContinue : confirmCancel).focus();
+            }
         });
 
         window.addEventListener('afterprint', restoreFullscreen);

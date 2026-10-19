@@ -1,4 +1,4 @@
-﻿<!-- Analytics tab: summary and charts are refreshed by loadData() in scripts.php. -->
+<!-- Analytics tab: summary and charts are refreshed by loadData() in scripts.php. -->
   <!-- Analytics Section -->
   <div id="analytics" class="section" style="display:none;">
     <div class="card p-3">

@@ -67,22 +67,21 @@ CREATE TABLE `operating_hours` (
   `day_of_week` enum('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday') DEFAULT NULL,
   `open_time` time DEFAULT NULL,
   `close_time` time DEFAULT NULL,
-  `is_closed` tinyint(1) DEFAULT 0,
-  `is_active` tinyint(1) DEFAULT 1
+  `is_closed` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `operating_hours`
 --
 
-INSERT INTO `operating_hours` (`id`, `day_of_week`, `open_time`, `close_time`, `is_closed`, `is_active`) VALUES
-(1, 'Monday', '08:00:00', '17:00:00', 0, 1),
-(2, 'Tuesday', '08:00:00', '17:00:00', 0, 1),
-(3, 'Wednesday', '08:00:00', '17:00:00', 0, 1),
-(4, 'Thursday', '08:00:00', '17:00:00', 0, 1),
-(5, 'Friday', '08:00:00', '17:00:00', 0, 1),
-(6, 'Saturday', '00:00:00', '12:00:00', 1, 1),
-(7, 'Sunday', NULL, NULL, 1, 1);
+INSERT INTO `operating_hours` (`id`, `day_of_week`, `open_time`, `close_time`, `is_closed`) VALUES
+(1, 'Monday', '08:00:00', '17:00:00', 0),
+(2, 'Tuesday', '08:00:00', '17:00:00', 0),
+(3, 'Wednesday', '08:00:00', '17:00:00', 0),
+(4, 'Thursday', '08:00:00', '17:00:00', 0),
+(5, 'Friday', '08:00:00', '17:00:00', 0),
+(6, 'Saturday', '00:00:00', '12:00:00', 1),
+(7, 'Sunday', NULL, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -260,18 +259,17 @@ INSERT INTO `queue_ticket_history` (`history_id`, `ticket_id`, `ticket_number`, 
 
 CREATE TABLE `roles` (
   `role_id` int(11) NOT NULL,
-  `role_name` varchar(20) NOT NULL,
-  `role_description` varchar(255) DEFAULT NULL
+  `role_name` varchar(20) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `roles`
 --
 
-INSERT INTO `roles` (`role_id`, `role_name`, `role_description`) VALUES
-(1, 'Admin', 'System administrator with full access'),
-(2, 'Teller', 'Service counter staff who handle queue tickets'),
-(3, 'Customer', 'Registered customers who can join queues');
+INSERT INTO `roles` (`role_id`, `role_name`) VALUES
+(1, 'Admin'),
+(2, 'Teller'),
+(3, 'Customer');
 
 -- --------------------------------------------------------
 
@@ -282,8 +280,6 @@ INSERT INTO `roles` (`role_id`, `role_name`, `role_description`) VALUES
 CREATE TABLE `services` (
   `service_id` int(11) NOT NULL,
   `service_name` varchar(100) NOT NULL,
-  `service_description` text DEFAULT NULL,
-  `estimated_duration` int(11) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -291,9 +287,9 @@ CREATE TABLE `services` (
 -- Dumping data for table `services`
 --
 
-INSERT INTO `services` (`service_id`, `service_name`, `service_description`, `estimated_duration`, `is_active`) VALUES
-(1, 'Payment', 'To Pay', 30, 1),
-(3, 'Notice of Billing', 'Notice Bill', 45, 1);
+INSERT INTO `services` (`service_id`, `service_name`, `is_active`) VALUES
+(1, 'Payment', 1),
+(3, 'Notice of Billing', 1);
 
 -- --------------------------------------------------------
 

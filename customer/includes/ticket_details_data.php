@@ -18,7 +18,7 @@ $customer_type = $_SESSION['customer_type'];
 $service_id = (int) $_SESSION['selected_service_id'];
 $service_name = $_SESSION['selected_service_name'];
 $priority = $_SESSION['ticket_priority'];
-$display_customer_type = ($customer_type === 'pwd_elder') ? 'PWD/Elder' : 'Regular';
+$display_customer_type = ($customer_type === 'pwd_elder') ? 'Priority' : 'Regular';
 
 try {
     $waitTimeQuery = "

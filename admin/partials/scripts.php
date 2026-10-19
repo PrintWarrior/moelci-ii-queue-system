@@ -1,17 +1,74 @@
-﻿<!-- Admin dashboard scripts: navigation, settings tabs, modals, AJAX refresh, and charts. -->
+<!-- Admin dashboard scripts: navigation, settings tabs, modals, AJAX refresh, and charts. -->
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    const newUserPassword = document.getElementById('newUserPassword');
+    const newUserPasswordToggle = document.getElementById('newUserPasswordToggle');
+    newUserPasswordToggle.hidden = false;
+    newUserPasswordToggle.addEventListener('click', () => {
+      const showPassword = newUserPassword.type === 'password';
+      newUserPassword.type = showPassword ? 'text' : 'password';
+      newUserPasswordToggle.textContent = showPassword ? 'Hide' : 'Show';
+      newUserPasswordToggle.setAttribute('aria-label', showPassword ? 'Hide password' : 'Show password');
+      newUserPasswordToggle.setAttribute('aria-pressed', String(showPassword));
+    });
+
+    const sectionInfo = {
+      dashboard: ['Dashboard', "An overview of your tellers and today's queue."],
+      transactions: ['Transactions', 'Review customer tickets and service activity.'],
+      analytics: ['Queue analytics', 'Explore service volume, wait times, and teller performance.'],
+      settings: ['Settings', 'Manage users, operating hours, announcements, and history.']
+    };
+
+    function setSidebarOpen(open) {
+      document.body.classList.toggle('sidebar-open', open);
+      document.getElementById('sidebar-toggle').setAttribute('aria-expanded', String(open));
+      document.querySelector('.sidebar-backdrop').hidden = !open;
+    }
+    document.getElementById('sidebar-toggle').addEventListener('click', function () {
+      setSidebarOpen(this.getAttribute('aria-expanded') !== 'true');
+    });
+    document.querySelector('.sidebar-backdrop').addEventListener('click', () => setSidebarOpen(false));
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+        setSidebarOpen(false);
+        document.getElementById('sidebar-toggle').focus();
+      }
+    });
+    window.matchMedia('(min-width: 992px)').addEventListener('change', event => {
+      if (event.matches) setSidebarOpen(false);
+    });
+
     function showSection(id, btn) {
-      document.querySelectorAll('.section').forEach(sec => sec.style.display = "none");
-      document.getElementById(id).style.display = "block";
-      document.querySelectorAll('.navbar .btn').forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
+      if (!sectionInfo[id]) return;
+      document.querySelectorAll('.section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+      document.querySelectorAll('.sidebar-link').forEach(button => {
+        button.classList.remove('active');
+        button.removeAttribute('aria-current');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-current', 'page');
+      document.getElementById('page-title').textContent = sectionInfo[id][0];
+      document.getElementById('page-description').textContent = sectionInfo[id][1];
+      document.title = sectionInfo[id][0] + ' | MOELCI-II Admin';
+      const wasSidebarOpen = document.body.classList.contains('sidebar-open');
+      setSidebarOpen(false);
+      if (wasSidebarOpen) document.getElementById('sidebar-toggle').focus();
+      if (id === 'analytics') {
+        requestAnimationFrame(() => { serviceChart?.resize(); hourChart?.resize(); });
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[char]));
     }
 
     function confirmClearTransactions() {
-    if (confirm('ARE YOU SURE YOU WANT TO CLEAR ALL TRANSACTIONS?\n\nThis action will permanently delete ALL transaction records and cannot be undone!')) {
+    if (confirm('Delete all transactions? This cannot be undone.')) {
         clearAllTransactions();
     }
 }
@@ -71,7 +128,7 @@ function clearAllTransactions() {
 
       const hashTabLink = document.querySelector(`#settingsTabs .nav-link[href="${window.location.hash}"]`);
       if (hashTabLink) {
-        const settingsButton = Array.from(document.querySelectorAll('.navbar .btn'))
+        const settingsButton = Array.from(document.querySelectorAll('.sidebar-link'))
           .find(button => (button.getAttribute('onclick') || '').includes("'settings'"));
 
         if (settingsButton) {
@@ -202,7 +259,7 @@ function clearAllTransactions() {
       const user = <?php echo json_encode($users); ?>.find(u => u.user_id == userId);
       const tellerServices = <?php echo json_encode($teller_services); ?>;
 
-      if (user) {
+      if (user && !['Admin', 'Customer'].includes(user.role_name)) {
         document.getElementById('editUserId').value = user.user_id;
         document.getElementById('editUsername').value = user.username;
         document.getElementById('editEmail').value = user.email || '';
@@ -231,7 +288,49 @@ function clearAllTransactions() {
       }
     }
 
+    Chart.defaults.font.family = '"Segoe UI", Arial, sans-serif';
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--admin-muted').trim();
+    Chart.defaults.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--admin-border').trim();
     let serviceChart, hourChart;
+    document.addEventListener('admin-theme-change', () => {
+      const styles = getComputedStyle(document.documentElement);
+      const textColor = styles.getPropertyValue('--admin-muted').trim();
+      const gridColor = styles.getPropertyValue('--admin-border').trim();
+      Chart.defaults.color = textColor;
+      Chart.defaults.borderColor = gridColor;
+      [serviceChart, hourChart].forEach(chart => {
+        if (!chart) return;
+        chart.options.plugins.legend.labels.color = textColor;
+        Object.values(chart.options.scales).forEach(scale => {
+          scale.ticks.color = textColor;
+          scale.grid.color = gridColor;
+          scale.border.color = gridColor;
+        });
+        chart.update('none');
+      });
+    });
+
+    async function setTellerAvailability(userId, available, button) {
+      button.disabled = true;
+      try {
+        const response = await fetch('admin_data.php', {
+          method: 'POST',
+          body: new URLSearchParams({
+            user_id: String(userId),
+            is_available: available ? '1' : '0',
+            csrf_token: <?php echo json_encode($_SESSION['availability_csrf']); ?>
+          })
+        });
+        const result = await response.json();
+        if (!response.ok || result.error) throw new Error(result.error || 'Unable to update availability.');
+        loadData();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
 
     function loadData() {
       setDefaultAnalyticsDates();
@@ -249,30 +348,51 @@ function clearAllTransactions() {
           // Dashboard -> Tellers
           let tellersHtml = "";
           data.tellers.forEach(t => {
-            let statusClass = (t.status.toLowerCase() === "active") ? "status-active" : "status-idle";
+            const status = String(t.status || 'Offline').toLowerCase();
+            const statusClass = ['active', 'idle', 'offline', 'unavailable'].includes(status) ? status : 'offline';
+            const avgWait = Number(t.avg_wait);
+            const available = Number(t.is_available) === 1;
             tellersHtml += `
-    <div class="col-md-3">
-        <div class="card p-3">
-            <h6>${t.teller_name}</h6>
-            <p><b>Service:</b> ${t.services || 'None Assigned'}</p>
-            <p><b>Status:</b> <span class="status-indicator ${statusClass}">${t.status || 'N/A'}</span></p>
-              <p><b>Queue Length:</b> ${t.queue_length || 0}</p>
-              <p><b>Next Customer:</b> ${t.next_customer || 'None'}</p>
-              <p><b>Average wait time:</b> ${t.avg_wait || 0} mins</p>
-            </div>
-          </div>`;
+              <div class="col-12 col-md-6 col-xl-6 col-xxl-3">
+                <article class="card teller-card h-100">
+                  <div class="teller-card-heading"><span class="teller-avatar"><svg class="icon" aria-hidden="true"><use href="#icon-user"></use></svg></span><span class="status-indicator status-${statusClass}">${escapeHtml(t.status || 'Offline')}</span></div>
+                  <h3>${escapeHtml(t.teller_name)}</h3>
+                  <p class="teller-service">${escapeHtml(t.services || 'None assigned')}</p>
+                  <dl class="teller-details">
+                    <div><dt>Queue length</dt><dd>${escapeHtml(t.queue_length || 0)}</dd></div>
+                    <div><dt>Next customer</dt><dd>${escapeHtml(t.next_customer || 'None')}</dd></div>
+                    <div><dt>Average wait</dt><dd>${Number.isFinite(avgWait) ? avgWait.toFixed(1) : '0.0'} <span>min</span></dd></div>
+                  </dl>
+                  ${t.pwd_fallback ? `<p class="coverage-note">PWD coverage: ${escapeHtml(t.priority_teller_name)} is unavailable.</p>` : ''}
+                  <button type="button" class="btn btn-sm ${available ? 'btn-outline-warning' : 'btn-outline-success'} availability-button"
+                    data-confirm-click="${available ? 'Mark this teller unavailable?' : 'Mark this teller available?'}"
+                    onclick="setTellerAvailability(${Number(t.user_id)}, ${!available}, this)">
+                    ${available ? 'Mark unavailable' : 'Mark available'}
+                  </button>
+                </article>
+              </div>`;
           });
           document.getElementById("tellers-container").innerHTML = tellersHtml;
 
           // Transactions
           let txHtml = "";
+          const transactionStatusColors = new Map([
+            ['completed', 'success'],
+            ['waiting', 'warning text-dark'],
+            ['in_progress', 'primary'],
+            ['skipped', 'secondary'],
+            ['cancelled', 'danger']
+          ]);
           data.transactions.forEach(tx => {
+            const status = String(tx.status ?? '').trim().toLowerCase();
+            const statusClass = transactionStatusColors.get(status) || 'dark';
+            const statusLabel = status.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()) || 'N/A';
             txHtml += `<tr>
           <td>${tx.ticket_number}</td>
           <td>${tx.customer_name}</td>
           <td>${tx.service_name}</td>
           <td>${tx.teller_name}</td>
-          <td>${tx.status}</td>
+          <td><span class="badge bg-${statusClass}">${escapeHtml(statusLabel)}</span></td>
           <td>${tx.created_at}</td>
           <td>${tx.completed_at || 'N/A'}</td>
         </tr>`;
@@ -313,7 +433,7 @@ function clearAllTransactions() {
               datasets: [{
                 label: 'Tickets',
                 data: serviceCounts,
-                backgroundColor: '#457b9d'
+                backgroundColor: '#47664d', borderRadius: 5
               }]
             },
             options: {
@@ -339,7 +459,7 @@ function clearAllTransactions() {
               datasets: [{
                 label: 'Tickets by Hour',
                 data: hourCounts,
-                backgroundColor: '#2a9d8f'
+                backgroundColor: '#d4af43', borderRadius: 5
               }]
             },
             options: {
@@ -372,17 +492,7 @@ function clearAllTransactions() {
               <td colspan="5" class="text-center text-muted">No teller activity for this date range.</td>
             </tr>`;
 
-          // Settings
-          let settingsHtml = `
-        <h6 class="section-title">System Settings</h6>
-        <p><b>Total Services:</b> ${data.settings.total_services}</p>
-        <p><b>Active Tellers:</b> ${data.settings.active_tellers}</p>
-        <p><b>Total Customers Today:</b> ${data.settings.customers_today}</p>
-        <p><b>System Status:</b> <span class="status-active">Active</span></p>`;
-          const settingsPage = document.getElementById("settings-page");
-          if (settingsPage) {
-            settingsPage.innerHTML = settingsHtml;
-          }
+
         });
     }
 

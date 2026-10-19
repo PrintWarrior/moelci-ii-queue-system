@@ -1,9 +1,7 @@
-﻿<!-- Dashboard tab: live teller cards are filled by admin_data.php through JavaScript. -->
-  <!-- Dashboard Section -->
-  <div id="dashboard" class="section">
-    <div class="row mt-3" id="tellers-container"></div>
-    <div class="reminders">
-      <p>Seminar every Friday (for Application and Notice of Billing)</p>
-      <p>MOELCI-II Hotline: <span class="hotline">0946 024 5379</span></p>
-    </div>
-  </div>
+<!-- Teller cards are refreshed by loadData(). -->
+<section id="dashboard" class="section" aria-label="Dashboard">
+  <div class="content-heading"><div><h2>Teller overview</h2><p>Manage availability and see who is ready to serve.</p></div><span class="section-tag"><svg class="icon" aria-hidden="true"><use href="#icon-user"></use></svg>Teller availability</span></div>
+  <div class="queue-note"><svg class="icon" aria-hidden="true"><use href="#icon-info"></use></svg><div><strong>How teller availability works</strong><p>Idle tellers are online and ready for customers. Offline means no connection for 60 seconds or logged out. Mark a teller unavailable for an absence or break.</p><details><summary>View priority coverage rules</summary><p>When Teller 2 is unavailable or offline, Teller 1 serves Payment PWD customers first. The same rule applies to Teller 3 when Teller 4 is unavailable for Notice of Billing.</p></details></div></div>
+  <div class="row g-3" id="tellers-container"></div>
+  <div class="reminders"><div><span class="reminder-icon"><svg class="icon" aria-hidden="true"><use href="#icon-clock"></use></svg></span><div><strong>Friday seminar</strong><p>Every Friday for Application and Notice of Billing.</p></div></div><div><span class="reminder-icon"><svg class="icon" aria-hidden="true"><use href="#icon-phone"></use></svg></span><div><strong>Need assistance?</strong><p>MOELCI-II Hotline: <a href="tel:09460245379">0946 024 5379</a></p></div></div></div>
+</section>

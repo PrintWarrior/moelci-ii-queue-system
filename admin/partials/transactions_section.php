@@ -1,4 +1,4 @@
-﻿<!-- Transactions tab: table body is refreshed by loadData() in scripts.php. -->
+<!-- Transactions tab: table body is refreshed by loadData() in scripts.php. -->
   <!-- Transactions Section -->
 <div id="transactions" class="section" style="display:none;">
     <div class="card p-3">

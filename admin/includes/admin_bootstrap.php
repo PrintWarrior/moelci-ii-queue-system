@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // Admin dashboard bootstrap.
 // Debug here when login/session checks, settings POST actions, or initial page data fail.
 session_start();
@@ -21,8 +21,29 @@ $pdo->exec("
 ");
 
 // Handle form submissions for settings
+if (empty($_SESSION['availability_csrf'])) {
+  $_SESSION['availability_csrf'] = bin2hex(random_bytes(32));
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   try {
+    // Resolve the current role from the database; never trust the submitted role.
+    if (isset($_POST['update_user']) || isset($_POST['delete_user'])) {
+      $target_id = filter_var($_POST['user_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+      if ($target_id === false || $target_id === null) {
+        throw new DomainException('Please select a valid user account.');
+      }
+      $target_stmt = $pdo->prepare("SELECT r.role_name FROM users u JOIN roles r ON u.role_id = r.role_id WHERE u.user_id = ?");
+      $target_stmt->execute([$target_id]);
+      $target_role = $target_stmt->fetchColumn();
+      if ($target_role === false) {
+        throw new DomainException('The selected user account could not be found.');
+      }
+      if (in_array($target_role, ['Admin', 'Customer'], true)) {
+        throw new DomainException('Admin and Customer accounts are protected and cannot be edited or deleted.');
+      }
+    }
+
     // User Management
     if (isset($_POST['add_user'])) {
       $username = $_POST['username'];
@@ -124,6 +145,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $stmt->execute([$announcement_id]);
       $announcement_message_success = "Announcement removed successfully!";
     }
+  } catch (DomainException $e) {
+    $user_error_message = $e->getMessage();
   } catch (PDOException $e) {
     $error_message = "Error: " . $e->getMessage();
   }
@@ -175,7 +198,7 @@ $announcements = $pdo->query("SELECT * FROM announcements WHERE is_active = 1 OR
 // Add User should only create Teller/Customer accounts from the dashboard.
 $roles = $pdo->query("SELECT * FROM roles WHERE role_name IN ('Teller', 'Customer')")->fetchAll();
 
-// Edit User must include every existing role so Admin accounts can be saved without changing role.
+// Role choices for editable accounts; protected accounts cannot open or submit edits.
 $edit_roles = $pdo->query("SELECT * FROM roles ORDER BY role_id")->fetchAll();
 
 $services = $pdo->query("SELECT * FROM services WHERE is_active = 1")->fetchAll();

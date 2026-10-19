@@ -1,0 +1,56 @@
+/* TV display: high contrast, stable positions, and large text at viewing distance. */
+:root { color-scheme: light; --monitor-red: #bc1717; --monitor-black: #0a0a0a; }
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #fff; color: #0a0a0a; font-family: Arial, Helvetica, sans-serif; }
+[hidden] { display: none !important; }
+#monitorContent { height: 100vh; height: 100dvh; width: 100%; display: grid; grid-template-rows: minmax(0, 11fr) minmax(0, 89fr); padding: .5vh .5vw; gap: .5vh; overflow: hidden; }
+.header { min-width: 0; background: #0a0a0a; display: flex; align-items: center; overflow: hidden; }
+.marquee { width: 100%; overflow: hidden; }
+.marquee-track { display: flex; width: max-content; animation: marqueeScroll var(--marquee-duration, 80s) linear infinite; }
+.marquee span { flex: 0 0 auto; font-size: min(3.6vw, 6.6vh, 80px); line-height: 1.15; font-weight: 700; color: #ff6666; white-space: nowrap; padding: 0 3vw; }
+@keyframes marqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+#queueContent { min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 73fr) minmax(0, 27fr); gap: .5vh; }
+.main { display: grid; grid-template-columns: minmax(0, 20fr) minmax(0, 60fr) minmax(0, 20fr); gap: .4vw; min-width: 0; min-height: 0; }
+.side { min-width: 0; min-height: 0; display: grid; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: .5vh; }
+.box { min-width: 0; min-height: 0; background: #f0f0f0; border: 2px solid #111; padding: 1.5vh .7vw; display: flex; flex-direction: column; align-items: center; justify-content: space-around; text-align: center; }
+.box.is-current { border: 4px solid var(--monitor-red); background: #fff6f6; }
+.side h3 { margin: 0; font-size: min(2.5vw, 4.7vh, 60px); line-height: 1.15; font-weight: 700; overflow-wrap: anywhere; }
+.ticket-number { font-size: min(4.4vw, 8vh, 105px); font-variant-numeric: tabular-nums; line-height: 1.1; font-weight: 800; color: var(--monitor-red); letter-spacing: -.04em; overflow-wrap: anywhere; }
+.side p { margin: 0; font-size: min(1.5vw, 2.8vh, 34px); line-height: 1.2; color: #222; }
+.center { min-width: 0; min-height: 0; border: 2px solid #111; background: #fff; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2vh 1.5vw; gap: 1.7vh; }
+.center h1 { margin: 0; font-size: min(4.1vw, 6.8vh, 96px); line-height: 1.05; font-weight: 800; letter-spacing: .02em; }
+.main-ticket { width: 100%; font-size: min(13vw, 21vh, 300px); line-height: 1.05; font-variant-numeric: tabular-nums; font-weight: 900; letter-spacing: -.035em; color: var(--monitor-red); overflow-wrap: anywhere; }
+.service-type { max-width: 100%; font-size: min(2.9vw, 4.3vh, 64px); line-height: 1.15; color: #222; }
+.teller-destination { margin: .5vh 0 0; max-width: 100%; padding: 1vh 1.6vw; background: #0a0a0a; color: #fff; font-size: min(3.7vw, 5.8vh, 84px); line-height: 1.15; font-weight: 750; overflow-wrap: anywhere; }
+.center.is-idle .main-ticket { color: #555; font-size: min(10vw, 16vh); }
+.center.is-idle .teller-destination { background: #fff; color: #222; font-size: min(3vw, 4.5vh); }
+.table-container { min-width: 0; min-height: 0; border: 2px solid #111; overflow: hidden; display: grid; grid-template-rows: minmax(0, 20fr) minmax(0, 80fr); }
+table { width: 100%; height: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; }
+ .waiting-title { margin: 0; display: grid; place-items: center; background: #0a0a0a; color: #fff; padding: .5vh; font-weight: 700; font-size: min(1.8vw, 3vh, 42px); line-height: 1.1; }
+thead { height: 29%; }
+th, td { border: 1px solid #555; padding: .3vh .7vw; font-size: min(2.1vw, 3.4vh, 48px); line-height: 1.1; }
+thead th { background: #e6e6e6; font-size: min(2vw, 3.1vh, 44px); }
+tbody th { font-weight: 600; background: #f5f5f5; }
+.waiting-count { font-size: min(2.8vw, 4.3vh, 68px); font-weight: 800; color: var(--monitor-red); font-variant-numeric: tabular-nums; }
+#connectionStatus { position: fixed; right: 1vw; bottom: 1vh; z-index: 10; max-width: 90vw; padding: .7vh 1vw; background: #0a0a0a; color: #fff; border: 2px solid #fff; font-size: min(1.7vw, 3vh); font-weight: 600; }
+@media (orientation: portrait) {
+  #monitorContent { grid-template-rows: minmax(0, 9fr) minmax(0, 91fr); }
+  .main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 21fr) minmax(0, 58fr) minmax(0, 21fr); gap: .5vh; }
+  .side { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: 1fr; gap: .7vw; }
+  .box { padding: .6vh 1vw; }
+  .side h3 { font-size: min(4.2vw, 2.8vh); }
+  .ticket-number { font-size: min(7vw, 4.8vh); }
+  .side p { font-size: min(3vw, 1.9vh); }
+  .center { gap: 1vh; padding: 1vh 3vw; }
+  .center h1 { font-size: min(7vw, 4.5vh); }
+  .main-ticket { font-size: min(19vw, 12vh); }
+  .service-type { font-size: min(5vw, 3vh); }
+  .teller-destination { font-size: min(6vw, 3.8vh); }
+  .center.is-idle .main-ticket { font-size: min(16vw, 10vh); }
+  .center.is-idle .teller-destination { font-size: min(5vw, 3vh); }
+  .marquee span { font-size: min(6.5vw, 4vh); }
+  .waiting-title { font-size: min(4vw, 2.5vh); }
+  th, td, thead th { font-size: min(3.6vw, 2.3vh); }
+  .waiting-count { font-size: min(5.5vw, 3.5vh); }
+  #connectionStatus { font-size: 3.2vw; }
+}

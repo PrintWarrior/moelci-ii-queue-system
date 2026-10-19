@@ -10,7 +10,3 @@ function updateDateTime() {
 
 setInterval(updateDateTime, 1000);
 updateDateTime();
-        
-        // Update time immediately and then every second
-        updateDateTime();
-        setInterval(updateDateTime, 1000);

@@ -1,6 +1,15 @@
 <?php
 session_start();
 
+// Logout releases the priority lane immediately; closed tabs expire after 60 seconds.
+if (isset($_SESSION['user_id']) && ($_SESSION['role'] ?? '') === 'Teller') {
+    require_once __DIR__ . '/db_connection.php';
+    require_once __DIR__ . '/teller_queue.php';
+    ensureTellerAvailabilityTable($pdo);
+    $stmt = $pdo->prepare('UPDATE teller_availability SET last_seen = NULL WHERE user_id = ?');
+    $stmt->execute([$_SESSION['user_id']]);
+}
+
 // Unset all session variables
 $_SESSION = array();
 

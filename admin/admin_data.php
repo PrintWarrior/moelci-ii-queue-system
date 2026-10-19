@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once '../includes/db_connection.php';
+require_once __DIR__ . '/../includes/db_connection.php';
+require_once __DIR__ . '/../includes/teller_queue.php';
 
 // Check if user is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
@@ -11,6 +12,36 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
 $response = [];
 
 try {
+    ensureTellerAvailabilityTable($pdo);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        header('Content-Type: application/json');
+        if (empty($_SESSION['availability_csrf'])
+            || !hash_equals($_SESSION['availability_csrf'], (string) ($_POST['csrf_token'] ?? ''))) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Please refresh the dashboard and try again.']);
+            exit;
+        }
+        $tellerId = filter_var($_POST['user_id'] ?? null, FILTER_VALIDATE_INT);
+        $availability = $_POST['is_available'] ?? '';
+        if (!$tellerId || !in_array($availability, ['0', '1'], true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid teller availability.']);
+            exit;
+        }
+        $stmt = $pdo->prepare("SELECT u.user_id FROM users u JOIN roles r ON r.role_id = u.role_id
+            WHERE u.user_id = ? AND u.is_active = 1 AND r.role_name = 'Teller'");
+        $stmt->execute([$tellerId]);
+        if (!$stmt->fetchColumn()) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Teller not found.']);
+            exit;
+        }
+        $stmt = $pdo->prepare("INSERT INTO teller_availability (user_id, is_available) VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE is_available = VALUES(is_available)");
+        $stmt->execute([$tellerId, (int) $availability]);
+        echo json_encode(['success' => true]);
+        exit;
+    }
     // Analytics date range. Defaults to today so the charts answer "what is happening now?"
     $analyticsStart = $_GET['analytics_start'] ?? date('Y-m-d');
     $analyticsEnd = $_GET['analytics_end'] ?? $analyticsStart;
@@ -37,38 +68,7 @@ try {
             CONCAT(u.first_name, ' ', u.last_name) AS teller_name,
             GROUP_CONCAT(DISTINCT s.service_name ORDER BY s.service_name SEPARATOR ', ') AS services,
 
-            -- FIXED: count waiting tickets for teller's services
-            (
-                SELECT COUNT(*)
-                FROM queue_tickets qt2
-                WHERE qt2.service_id IN (
-                    SELECT ts2.service_id
-                    FROM teller_services ts2
-                    WHERE ts2.user_id = u.user_id
-                      AND ts2.is_active = 1
-                )
-                AND qt2.status = 'waiting'
-            ) AS queue_length,
-
-            -- FIXED: get next customer (smallest ticket for teller's services)
-            (
-                SELECT MIN(qt3.ticket_number)
-                FROM queue_tickets qt3
-                WHERE qt3.service_id IN (
-                    SELECT ts3.service_id
-                    FROM teller_services ts3
-                    WHERE ts3.user_id = u.user_id
-                      AND ts3.is_active = 1
-                )
-                AND qt3.status = 'waiting'
-            ) AS next_customer,
-
-            COALESCE(AVG(TIMESTAMPDIFF(MINUTE, qt.created_at, qt.called_at)), 0) AS avg_wait,
-
-            CASE 
-                WHEN COUNT(CASE WHEN qt.status = 'in_progress' THEN 1 END) > 0 THEN 'Active'
-                ELSE 'Idle'
-            END AS status
+            COALESCE(AVG(TIMESTAMPDIFF(MINUTE, qt.created_at, qt.called_at)), 0) AS avg_wait
 
         FROM users u
         LEFT JOIN teller_services ts ON u.user_id = ts.user_id AND ts.is_active = 1
@@ -82,6 +82,28 @@ try {
     $stmt = $pdo->prepare($tellerQuery);
     $stmt->execute();
     $response['tellers'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Use the same eligibility as the teller's Call Next action and waiting count.
+    foreach ($response['tellers'] as &$teller) {
+        $tellerId = (int) $teller['user_id'];
+        $stmt = $pdo->prepare("SELECT is_available,
+            last_seen >= DATE_SUB(NOW(), INTERVAL " . TELLER_OFFLINE_SECONDS . " SECOND) AS is_online
+            FROM teller_availability WHERE user_id = ?");
+        $stmt->execute([$tellerId]);
+        $presence = $stmt->fetch(PDO::FETCH_ASSOC);
+        $teller['is_available'] = $presence ? (int) $presence['is_available'] : 1;
+        $teller['is_online'] = $presence && $presence['is_online'] ? 1 : 0;
+        $stats = getTellerStats($pdo, $tellerId);
+        $next = getNextQueue($pdo, $tellerId);
+        $teller['queue_length'] = $stats['waiting_count'];
+        $teller['next_customer'] = $next ? $next['ticket_number'] : null;
+        $teller['status'] = !$teller['is_available'] ? 'Unavailable'
+            : (!$teller['is_online'] ? 'Offline' : ($stats['in_progress_count'] > 0 ? 'Active' : 'Idle'));
+        $rule = getTellerQueueRule($tellerId);
+        $teller['pwd_fallback'] = isset($rule['priority_teller']) && in_array('pwd', getTellerCustomerTypes($pdo, $tellerId), true);
+        $teller['priority_teller_name'] = $rule['priority_teller_name'] ?? '';
+    }
+    unset($teller);
 
     // Get all transactions (queue tickets)
     $transactionsQuery = "
