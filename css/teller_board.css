@@ -2,7 +2,9 @@
 :root { color-scheme: light; --teller-bg: #f5f6f2; --teller-surface: #fff; --teller-ink: #26332a; --teller-muted: #6d776e; --teller-border: #e1e6dc; --teller-green: #304d37; --teller-soft: #edf1e6; }
 :root[data-bs-theme="dark"] { color-scheme: dark; --teller-bg: #161c18; --teller-surface: #202822; --teller-ink: #e2e9de; --teller-muted: #a3afa0; --teller-border: #354035; --teller-green: #a8c897; --teller-soft: #2d392b; }
 * { box-sizing: border-box; }
-body.teller-app { margin: 0; min-height: 100vh; background: var(--teller-bg); color: var(--teller-ink); font: 14px/1.6 "Segoe UI", Arial, sans-serif; }
+html { height: 100%; overflow: hidden; }
+body.teller-app { margin: 0; height: 100vh; height: 100dvh; overflow: hidden; background: var(--teller-bg); color: var(--teller-ink); font: 14px/1.6 "Segoe UI", Arial, sans-serif; }
+.teller-screen { width: 100%; min-height: 100vh; min-height: 100dvh; transform: scale(var(--teller-scale, 1)); transform-origin: top center; display: flow-root; }
 button, a { -webkit-tap-highlight-color: transparent; }
 .icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .svg-definitions { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -81,3 +83,26 @@ h1 { font-size: clamp(23px, 2.6vw, 29px); font-weight: 700; letter-spacing: -.8p
 [data-bs-theme="dark"] .btn-callback { border-color: #56734c; }
 @media (max-width: 760px) { .page-heading { flex-direction: column; align-items: flex-start; gap: 14px; } .datetime-block { max-width: none; text-align: left; } .queue-grid { grid-template-columns: 1fr; } .stat-card { padding: 16px; gap: 10px; } .stat-icon { width: 32px; height: 32px; } .stats-grid { gap: 10px; } .buttons { grid-template-columns: 1fr; } .queue-card { min-height: 245px; } }
 @media (max-width: 480px) { .workspace-bar { padding: 14px 16px; gap: 10px; } .brand strong { font-size: 16px; } .brand span { font-size: 10px; } .workspace-tools { gap: 12px; } .workspace-tools button span, .logout-link span { display: none; } .theme-toggle { padding: 8px; } .logout-link { padding: 8px; } .dashboard-container { padding: 26px 16px 20px; } .stats-grid { gap: 8px; } .stat-card { flex-direction: column; align-items: flex-start; padding: 13px; gap: 9px; } .stat-label { font-size: 10px; } .stat-number { font-size: 24px; } .queue-card, .actions-panel { padding: 20px; } .workspace-footer { flex-direction: column; gap: 5px; } }
+
+/* Tighten spacing on shorter screens before fitting the entire workspace. */
+@media (max-height: 850px) {
+    .workspace-bar { padding-top: 10px; padding-bottom: 10px; }
+    .dashboard-container { padding-top: 16px; padding-bottom: 12px; }
+    .page-heading { margin-bottom: 14px; gap: 10px; }
+    h1 { margin-top: 3px; margin-bottom: 3px; font-size: 25px; }
+    .queue-notice { padding: 10px 14px; margin-bottom: 14px; }
+    .stats-grid { margin-bottom: 14px; }
+    .stat-card { padding: 12px 16px; }
+    .stat-number { font-size: 25px; }
+    .queue-grid { margin-bottom: 14px; }
+    .queue-card { min-height: 190px; padding: 15px 20px; }
+    .card-heading { margin-bottom: 14px; }
+    .ticket-number { font-size: 44px; margin: 5px 0 10px; }
+    .next-ticket-number { margin: 5px 0; }
+    .queue-hint { margin-top: 10px; }
+    .empty-symbol { width: 38px; height: 38px; margin-bottom: 9px; }
+    .actions-panel { padding: 14px 20px; }
+    .actions-heading p { margin-bottom: 12px; }
+    .action-note { margin-top: 10px; }
+    .workspace-footer { margin-top: 12px; }
+}

@@ -67,45 +67,42 @@
       }[char]));
     }
 
-    function confirmClearTransactions() {
-    if (confirm('Delete all transactions? This cannot be undone.')) {
-        clearAllTransactions();
-    }
-}
-
-function clearAllTransactions() {
-    // Show loading state
-    const clearBtn = document.querySelector('button[onclick="confirmClearTransactions()"]');
-    const originalText = clearBtn.innerHTML;
-    clearBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Clearing...';
-    clearBtn.disabled = true;
-
-    fetch('../includes/clear_transactions.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('All transactions have been cleared successfully!');
-            // Reload the transactions list
-            loadData();
+    async function archiveTransactions(button) {
+      if (button.disabled) return;
+      if (!confirm('Move ALL current transactions to History and clear the queue? Waiting and in-progress customers will also be removed from the current queue.')) return;
+      const originalLabel = button.innerHTML;
+      const feedback = document.getElementById('archiveTransactionsFeedback');
+      button.disabled = true;
+      button.textContent = 'Moving to History...';
+      feedback.hidden = true;
+      try {
+        const response = await fetch('../includes/clear_transactions.php', {
+          method: 'POST',
+          body: new URLSearchParams({
+            csrf_token: <?php echo json_encode($_SESSION['availability_csrf']); ?>
+          })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.error || 'Unable to move transactions to history.');
+        feedback.className = 'alert alert-success';
+        feedback.textContent = result.archived_count
+          ? result.archived_count + ' transaction(s) moved to History. The current queue is cleared. Open Settings → History to view the updated records.'
+          : 'There are no current transactions to move.';
+        if (result.archived_count > 0) {
+          alert(result.archived_count + ' transaction(s) moved to History.');
+          window.location.assign('admin_dashboard.php#history');
         } else {
-            alert('Error clearing transactions: ' + (data.error || 'Unknown error'));
+          loadData();
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Network error occurred while clearing transactions');
-    })
-    .finally(() => {
-        // Restore button state
-        clearBtn.innerHTML = originalText;
-        clearBtn.disabled = false;
-    });
-}
+      } catch (error) {
+        feedback.className = 'alert alert-danger';
+        feedback.textContent = error.message || 'Unable to reach the server. Check your connection and try again.';
+      } finally {
+        feedback.hidden = false;
+        button.disabled = false;
+        button.innerHTML = originalLabel;
+      }
+    }
 
     // Settings tabs functionality
     document.addEventListener('DOMContentLoaded', function() {

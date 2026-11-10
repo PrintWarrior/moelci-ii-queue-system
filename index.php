@@ -132,6 +132,11 @@ function redirectBasedOnRole($role)
                     </div>
                     <button type="submit" class="btn-login"><span>Sign in</span><span aria-hidden="true">→</span></button>
                 </form>
+                <a class="btn-monitor" href="https://moelci-2tangub-city.com/php/monitor_display.php">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v4M8 21h8"/></svg>
+                    <span>Open Queue Monitor</span>
+                    <span aria-hidden="true">&rarr;</span>
+                </a>
                 <p class="account-help">Need help signing in? Contact your administrator.</p>
             </div>
             <p class="login-footer">MOELCI-II <span aria-hidden="true">·</span> Queue Management System</p>

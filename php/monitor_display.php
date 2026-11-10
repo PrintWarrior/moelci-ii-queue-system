@@ -281,30 +281,30 @@ $headerText = implode(' --- ', $headerMessages) . ' --- ';
       <aside class="side" aria-label="Payment tellers">
       <section class="box<?php echo ($queueData['now_serving'] !== '---' && $tellerData[0]['ticket'] === $queueData['now_serving']) ? ' is-current' : ''; ?>" aria-label="<?php echo htmlspecialchars($tellerData[0]['name']); ?>">
         <h3><?php echo htmlspecialchars($tellerData[0]['name']); ?></h3>
-        <div class="ticket-number"><?php echo htmlspecialchars($tellerData[0]['ticket']); ?></div>
+        <div class="ticket-number <?php echo str_starts_with($tellerData[0]['ticket'], 'P') ? 'priority-ticket' : (str_starts_with($tellerData[0]['ticket'], 'R') ? 'regular-ticket' : ''); ?>"><?php echo htmlspecialchars($tellerData[0]['ticket']); ?></div>
         <p>Served today: <strong><?php echo (int) $tellerData[0]['count']; ?></strong></p>
       </section>
       <section class="box<?php echo ($queueData['now_serving'] !== '---' && $tellerData[1]['ticket'] === $queueData['now_serving']) ? ' is-current' : ''; ?>" aria-label="<?php echo htmlspecialchars($tellerData[1]['name']); ?>">
         <h3><?php echo htmlspecialchars($tellerData[1]['name']); ?></h3>
-        <div class="ticket-number"><?php echo htmlspecialchars($tellerData[1]['ticket']); ?></div>
+        <div class="ticket-number <?php echo str_starts_with($tellerData[1]['ticket'], 'P') ? 'priority-ticket' : (str_starts_with($tellerData[1]['ticket'], 'R') ? 'regular-ticket' : ''); ?>"><?php echo htmlspecialchars($tellerData[1]['ticket']); ?></div>
         <p>Served today: <strong><?php echo (int) $tellerData[1]['count']; ?></strong></p>
       </section>
       </aside>
       <section class="center<?php echo $queueData['now_serving'] === '---' ? ' is-idle' : ''; ?>" aria-label="Latest called ticket">
         <h1><?php echo $queueData['now_serving'] === '---' ? 'PLEASE WAIT' : 'NOW SERVING'; ?></h1>
-        <div id="nowServing" class="main-ticket" data-called-at="<?php echo htmlspecialchars($queueData['serving'][0]['called_at'] ?? ''); ?>"><?php echo htmlspecialchars($queueData['now_serving']); ?></div>
+        <div id="nowServing" class="main-ticket <?php echo str_starts_with($queueData['now_serving'], 'P') ? 'priority-ticket' : (str_starts_with($queueData['now_serving'], 'R') ? 'regular-ticket' : ''); ?>" data-called-at="<?php echo htmlspecialchars($queueData['serving'][0]['called_at'] ?? ''); ?>"><?php echo htmlspecialchars($queueData['now_serving']); ?></div>
         <div id="nowServiceType" class="service-type"><?php echo $queueData['now_serving_service'] !== '---' ? htmlspecialchars($queueData['now_serving_service']) : 'Your number will appear here when called'; ?></div>
         <h2 id="nowTeller" class="teller-destination" data-teller="<?php echo htmlspecialchars($queueData['now_serving_teller']); ?>"><?php echo $queueData['now_serving'] !== '---' ? 'Proceed to ' . htmlspecialchars($queueData['now_serving_teller']) : 'Please watch this screen'; ?></h2>
       </section>
       <aside class="side" aria-label="Notice of Billing tellers">
       <section class="box<?php echo ($queueData['now_serving'] !== '---' && $tellerData[2]['ticket'] === $queueData['now_serving']) ? ' is-current' : ''; ?>" aria-label="<?php echo htmlspecialchars($tellerData[2]['name']); ?>">
         <h3><?php echo htmlspecialchars($tellerData[2]['name']); ?></h3>
-        <div class="ticket-number"><?php echo htmlspecialchars($tellerData[2]['ticket']); ?></div>
+        <div class="ticket-number <?php echo str_starts_with($tellerData[2]['ticket'], 'P') ? 'priority-ticket' : (str_starts_with($tellerData[2]['ticket'], 'R') ? 'regular-ticket' : ''); ?>"><?php echo htmlspecialchars($tellerData[2]['ticket']); ?></div>
         <p>Served today: <strong><?php echo (int) $tellerData[2]['count']; ?></strong></p>
       </section>
       <section class="box<?php echo ($queueData['now_serving'] !== '---' && $tellerData[3]['ticket'] === $queueData['now_serving']) ? ' is-current' : ''; ?>" aria-label="<?php echo htmlspecialchars($tellerData[3]['name']); ?>">
         <h3><?php echo htmlspecialchars($tellerData[3]['name']); ?></h3>
-        <div class="ticket-number"><?php echo htmlspecialchars($tellerData[3]['ticket']); ?></div>
+        <div class="ticket-number <?php echo str_starts_with($tellerData[3]['ticket'], 'P') ? 'priority-ticket' : (str_starts_with($tellerData[3]['ticket'], 'R') ? 'regular-ticket' : ''); ?>"><?php echo htmlspecialchars($tellerData[3]['ticket']); ?></div>
         <p>Served today: <strong><?php echo (int) $tellerData[3]['count']; ?></strong></p>
       </section>
       </aside>

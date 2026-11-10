@@ -9,4 +9,5 @@
     <link rel="stylesheet" href="../css/teller_board.css">
     <link rel="icon" type="image/png" href="../assets/imgs/moelci_logo.png">
     <script src="../js/confirm_actions.js" defer></script>
+    <script src="../js/teller_layout.js" defer></script>
 </head>

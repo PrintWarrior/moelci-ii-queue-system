@@ -5,13 +5,14 @@
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="section-title mb-0">Queue Analytics</h6>
         <div class="d-flex align-items-center gap-2">
-          <input type="date" id="analyticsStartDate" class="form-control form-control-sm">
+          <input type="date" id="analyticsStartDate" class="form-control form-control-sm" aria-label="Analytics start date">
           <span>to</span>
-          <input type="date" id="analyticsEndDate" class="form-control form-control-sm">
+          <input type="date" id="analyticsEndDate" class="form-control form-control-sm" aria-label="Analytics end date">
           <button type="button" class="btn btn-sm btn-primary" onclick="loadData()">Apply</button>
         </div>
       </div>
 
+      <p class="text-muted small">Includes current and archived tickets by creation date. To view one day, select the same start and end date, then click Apply.</p>
       <div id="analytics-summary" class="row g-3 mb-3"></div>
 
       <div class="row g-4">

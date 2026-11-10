@@ -2,6 +2,7 @@
 session_start();
 require_once __DIR__ . '/../includes/db_connection.php';
 require_once __DIR__ . '/../includes/teller_queue.php';
+require_once __DIR__ . '/../includes/analytics_tickets.php';
 
 // Check if user is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'Admin') {
@@ -60,6 +61,9 @@ try {
 
     $analyticsStartDateTime = $analyticsStart . ' 00:00:00';
     $analyticsEndDateTime = $analyticsEnd . ' 23:59:59';
+    $analyticsTicketSql = analyticsTicketSourceSql();
+    $analyticsParams = [$analyticsStartDateTime, $analyticsEndDateTime,
+                        $analyticsStartDateTime, $analyticsEndDateTime];
 
     // Get tellers with their queue information
     $tellerQuery = "
@@ -137,41 +141,38 @@ try {
             COUNT(CASE WHEN status = 'skipped' THEN 1 END) AS skipped_count,
             COALESCE(ROUND(AVG(CASE WHEN called_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, created_at, called_at) END), 1), 0) AS avg_wait,
             COALESCE(ROUND(AVG(CASE WHEN called_at IS NOT NULL AND completed_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, called_at, completed_at) END), 1), 0) AS avg_service
-        FROM queue_tickets
-        WHERE created_at BETWEEN ? AND ?
+        FROM ($analyticsTicketSql) analytics_tickets
     ";
 
     $stmt = $pdo->prepare($analyticsQuery);
-    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $stmt->execute($analyticsParams);
     $analyticsData = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $busiestServiceQuery = "
         SELECT s.service_name, COUNT(qt.ticket_id) AS ticket_count
-        FROM queue_tickets qt
+        FROM ($analyticsTicketSql) qt
         JOIN services s ON qt.service_id = s.service_id
-        WHERE qt.created_at BETWEEN ? AND ?
         GROUP BY s.service_id, s.service_name
         ORDER BY ticket_count DESC
         LIMIT 1
     ";
 
     $stmt = $pdo->prepare($busiestServiceQuery);
-    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $stmt->execute($analyticsParams);
     $busiestService = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $mostActiveTellerQuery = "
         SELECT CONCAT(u.first_name, ' ', u.last_name) AS teller_name, COUNT(qt.ticket_id) AS served_count
-        FROM queue_tickets qt
+        FROM ($analyticsTicketSql) qt
         JOIN users u ON qt.assigned_user_id = u.user_id
         WHERE qt.status = 'completed'
-          AND qt.created_at BETWEEN ? AND ?
         GROUP BY u.user_id, teller_name
         ORDER BY served_count DESC
         LIMIT 1
     ";
 
     $stmt = $pdo->prepare($mostActiveTellerQuery);
-    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $stmt->execute($analyticsParams);
     $mostActiveTeller = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $response['analytics'] = [
@@ -191,28 +192,26 @@ try {
     $serviceStatsQuery = "
         SELECT s.service_name, COUNT(qt.ticket_id) AS ticket_count
         FROM services s
-        LEFT JOIN queue_tickets qt
+        LEFT JOIN ($analyticsTicketSql) qt
             ON s.service_id = qt.service_id
-           AND qt.created_at BETWEEN ? AND ?
         GROUP BY s.service_id, s.service_name
         ORDER BY ticket_count DESC, s.service_name ASC
     ";
 
     $stmt = $pdo->prepare($serviceStatsQuery);
-    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $stmt->execute($analyticsParams);
     $response['service_stats'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Hourly demand for staffing decisions.
     $hourStatsQuery = "
         SELECT HOUR(created_at) AS hour_number, COUNT(*) AS ticket_count
-        FROM queue_tickets
-        WHERE created_at BETWEEN ? AND ?
+        FROM ($analyticsTicketSql) analytics_tickets
         GROUP BY HOUR(created_at)
         ORDER BY hour_number
     ";
 
     $stmt = $pdo->prepare($hourStatsQuery);
-    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $stmt->execute($analyticsParams);
     $hourRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $hourStats = [];
@@ -240,17 +239,16 @@ try {
             COALESCE(ROUND(AVG(CASE WHEN qt.called_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, qt.created_at, qt.called_at) END), 1), 0) AS avg_wait,
             COALESCE(ROUND(AVG(CASE WHEN qt.called_at IS NOT NULL AND qt.completed_at IS NOT NULL THEN TIMESTAMPDIFF(MINUTE, qt.called_at, qt.completed_at) END), 1), 0) AS avg_service
         FROM users u
-        LEFT JOIN queue_tickets qt
+        LEFT JOIN ($analyticsTicketSql) qt
             ON u.user_id = qt.assigned_user_id
-           AND qt.created_at BETWEEN ? AND ?
         WHERE u.role_id = (SELECT role_id FROM roles WHERE role_name = 'Teller')
-          AND u.is_active = 1
+          AND (u.is_active = 1 OR qt.ticket_id IS NOT NULL)
         GROUP BY u.user_id, teller_name
         ORDER BY served_count DESC, teller_name ASC
     ";
 
     $stmt = $pdo->prepare($tellerPerformanceQuery);
-    $stmt->execute([$analyticsStartDateTime, $analyticsEndDateTime]);
+    $stmt->execute($analyticsParams);
     $response['teller_performance'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Settings data

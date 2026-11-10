@@ -1,5 +1,6 @@
 <?php
 // Database configuration
+
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'moelci-ii');
 define('DB_USER', 'root');

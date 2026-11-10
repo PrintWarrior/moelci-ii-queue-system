@@ -1,4 +1,5 @@
 <body class="teller-app">
+    <div class="teller-screen" id="tellerScreen">
     <svg class="svg-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></symbol><symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol><symbol id="icon-next" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol><symbol id="icon-call" viewBox="0 0 24 24"><path d="M4 10v4h4l8 5V5l-8 5H4ZM19 8a8 8 0 0 1 0 8"/></symbol><symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol><symbol id="icon-logout" viewBox="0 0 24 24"><path d="M9 4H4v16h5M9 12h12m-4-4 4 4-4 4"/></symbol><symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20.5 13A9 9 0 0 1 11 3.5 9 9 0 1 0 20.5 13Z"/></symbol><symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/></symbol></defs></svg>
     <header class="workspace-bar">
         <div class="brand"><img src="../assets/imgs/moelci_logo.png" alt="MOELCI-II logo" width="44" height="44"><div><strong>MOELCI-II</strong><span>Queue Management</span></div></div>
@@ -50,3 +51,4 @@
         </section>
         <footer class="workspace-footer"><span>MOELCI-II · Teller workspace</span><span>Queue updates automatically every 10 seconds</span></footer>
     </main>
+    </div>

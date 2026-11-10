@@ -22,6 +22,10 @@ $pdo->exec("CREATE TEMPORARY TABLE queue_tickets (ticket_id INT PRIMARY KEY,
     ticket_number VARCHAR(30), service_id INT, customer_type VARCHAR(20), status VARCHAR(20),
     created_at DATETIME, called_at DATETIME NULL, completed_at DATETIME NULL,
     assigned_user_id INT NULL, customer_id INT NULL, customer_name VARCHAR(100)) ENGINE=InnoDB");
+$pdo->exec("CREATE TEMPORARY TABLE queue_ticket_history (
+    history_id INT PRIMARY KEY, ticket_id INT, ticket_number VARCHAR(30), service_id INT,
+    assigned_user_id INT NULL, status VARCHAR(20), created_at DATETIME,
+    called_at DATETIME NULL, completed_at DATETIME NULL) ENGINE=InnoDB");
 $pdo->exec("INSERT INTO roles VALUES (2, 'Teller')");
 $pdo->exec("INSERT INTO users VALUES (5,2,1,'Teller','1'), (8,2,1,'Teller','2'),
     (10,2,1,'Teller','3'), (11,2,1,'Teller','4')");

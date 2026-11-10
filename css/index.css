@@ -37,6 +37,10 @@ button:focus-visible { outline: 3px solid #a2852b; outline-offset: 3px; }
 .btn-login { width: 100%; min-height: 49px; margin-top: 5px; padding: 12px 17px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #293d2c; color: #fff; border: 1px solid #293d2c; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
 .btn-login:hover { background: #3c5540; }
 .btn-login > span:last-child { font-size: 20px; font-weight: 400; }
+.btn-monitor { width: 100%; min-height: 49px; margin-top: 14px; padding: 12px 17px; display: flex; align-items: center; gap: 10px; border: 1px solid #dce0d6; border-radius: 8px; background: #fff; color: #293d2c; font-size: 13px; font-weight: 600; text-decoration: none; }
+.btn-monitor:hover { background: #f4f5ef; border-color: #a5b09c; }
+.btn-monitor:focus-visible { outline: 3px solid #a2852b; outline-offset: 3px; }
+.btn-monitor > span:last-child { margin-left: auto; font-size: 20px; font-weight: 400; }
 .account-help { margin: 24px 0 0; text-align: center; color: #74796f; font-size: 11px; line-height: 1.8; }
 .login-footer { margin: auto 0 0; text-align: center; color: #858a7f; font-size: 10px; line-height: 1.6; }
 .login-footer span { padding: 0 6px; }
