@@ -44,8 +44,8 @@
         <section class="actions-panel" aria-labelledby="actions-title"><div class="actions-heading"><h2 id="actions-title">Queue actions</h2><p>Choose the next step for your customer.</p></div>
             <form method="POST" class="buttons" id="actionForm">
                 <button type="submit" name="call_next" data-confirm="<?php echo $current ? ($next ? 'Skip the current customer and call the next?' : 'Skip the current customer?') : 'Call the next customer?'; ?>" class="queue-button btn-call" <?php echo (!$teller_available || (!$next && !$current)) ? 'disabled' : ''; ?>><svg class="icon" aria-hidden="true"><use href="#icon-next"></use></svg>Call next customer</button>
-                <button type="submit" name="mark_served" data-confirm="<?php echo ($next && $teller_available) ? 'Mark this customer as served and call the next?' : 'Mark this customer as served?'; ?>" class="queue-button btn-served" <?php echo !$current ? 'disabled' : ''; ?>><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg>Mark as served</button>
-                <button type="submit" name="callback_current" data-confirm="Call this customer again?" class="queue-button btn-callback" <?php echo !$current ? 'disabled' : ''; ?>><svg class="icon" aria-hidden="true"><use href="#icon-call"></use></svg>Call back customer</button>
+                <button type="submit" name="mark_served" class="queue-button btn-served" <?php echo !$current ? 'disabled' : ''; ?>><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg>Mark as served</button>
+                <button type="submit" name="callback_current" class="queue-button btn-callback" <?php echo !$current ? 'disabled' : ''; ?>><svg class="icon" aria-hidden="true"><use href="#icon-call"></use></svg>Call back customer</button>
             </form>
             <p class="action-note">Calling next skips any current customer. Marking served calls the next waiting customer when you are available.</p>
         </section>

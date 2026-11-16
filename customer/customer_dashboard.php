@@ -166,6 +166,35 @@ if (isset(
             .ticket-container {
                 width: 58mm;
                 margin: 0;
+                padding: 3mm 2mm;
+                border: 0;
+            }
+
+            .ticket-status,
+            .ticket-info .ticket-line:not(.ticket-time-line) {
+                display: none !important;
+            }
+
+            .ticket-title {
+                display: block;
+                margin: 0 0 2mm;
+                font-size: 12pt;
+                font-weight: 700;
+                text-align: center;
+            }
+
+            .ticket-number {
+                margin: 0 0 2mm;
+                font-size: 30pt;
+                line-height: 1.1;
+            }
+
+            .ticket-info { text-align: center; }
+            .ticket-time-line {
+                justify-content: center;
+                border: 0;
+                padding: 0;
+                font-size: 11pt;
             }
         }
     </style>
@@ -245,7 +274,7 @@ if (isset(
             >
                 <div class="ticket-container">
                     <div class="ticket-status">TICKET READY</div>
-                    <div class="ticket-title">YOUR QUEUE TICKET</div>
+                    <div class="ticket-title">Queue Ticket</div>
                     <div class="ticket-number" id="ticketNumber"><?php echo $show_ticket ? htmlspecialchars($ticket_number) : ''; ?></div>
 
                     <div class="ticket-info">
@@ -264,8 +293,7 @@ if (isset(
                             <span id="ticketPriority"><?php echo $show_ticket ? ucfirst($priority) : ''; ?></span>
                         </div>
 
-                        <div class="ticket-line">
-                            <span class="info-label">Timestamp:</span>
+                        <div class="ticket-line ticket-time-line">
                             <span id="ticketTimestamp"><?php echo $show_ticket ? htmlspecialchars($timestamp) : ''; ?></span>
                         </div>
                     </div>

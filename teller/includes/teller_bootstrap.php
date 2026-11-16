@@ -12,12 +12,20 @@ $user_id = (int) $_SESSION['user_id'];
 $teller_name = $_SESSION['first_name'] . ' ' . $_SESSION['last_name'];
 
 try {
-    ensureTellerAvailabilityTable($pdo);
+    if (!isset($_GET['partial'])) {
+        ensureTellerAvailabilityTable($pdo);
+    }
     recordTellerHeartbeat($pdo, $user_id);
 
     // Serialize queue actions for each service so two tellers cannot claim one ticket.
     $isAction = $_SERVER['REQUEST_METHOD'] === 'POST'
         && (isset($_POST['call_next']) || isset($_POST['mark_served']) || isset($_POST['callback_current']));
+    if ($_SERVER['REQUEST_METHOD'] === 'POST'
+        && !empty($_SERVER['HTTP_X_TELLER_AJAX'])
+        && !$isAction) {
+        http_response_code(400);
+        exit;
+    }
     if ($isAction) {
         $pdo->beginTransaction();
         $rule = getTellerQueueRule($user_id);
@@ -68,6 +76,10 @@ try {
             }
         }
         $pdo->commit();
+        if (!empty($_SERVER['HTTP_X_TELLER_AJAX'])) {
+            http_response_code(204);
+            exit;
+        }
         header('Location: teller_dashboard.php');
         exit;
     }

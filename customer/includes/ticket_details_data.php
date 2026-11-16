@@ -41,5 +41,5 @@ try {
 }
 
 date_default_timezone_set('Asia/Manila');
-$timestamp = date('h:i A m/d/Y');
+$timestamp = date('g:i A n/j/Y');
 ?>

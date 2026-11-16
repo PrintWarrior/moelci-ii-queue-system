@@ -1,6 +1,9 @@
 <?php
 // Database configuration
 
+// Queue timestamps and daily reports use Philippine local time.
+date_default_timezone_set('Asia/Manila');
+
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'moelci-ii');
 define('DB_USER', 'root');
@@ -23,4 +26,8 @@ if (!isset($pdo)) {
         die("Database connection failed.");
     }
 }
+
+// MySQL TIMESTAMP values are converted using the connection's session timezone.
+// Hostinger commonly runs MySQL in UTC, so pin each PDO connection to UTC+8.
+$pdo->exec("SET time_zone = '+08:00'");
 ?>
